@@ -92,10 +92,8 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
 
     @property
     def name(self):
-        device_data = self.smart_device_data
-        model = device_data.get("model") or self._disk_name
-        short_model = model.split()[0] if " " in model else model
-        return f"{self.system.name} {short_model} S.M.A.R.T." if self.system else None
+        label = self._disk_name or "disk"
+        return f"{self.system.name} {label} S.M.A.R.T." if self.system else None
 
     @property
     def is_on(self):
@@ -128,8 +126,7 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
 
         temp = device_data.get("temp")
         if temp is not None:
-            attributes["temperature"] = temp
-            attributes["temperature_unit"] = "°C"
+            attributes["temperature_c"] = temp
 
         capacity = device_data.get("capacity", 0)
         if capacity:

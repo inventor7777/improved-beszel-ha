@@ -55,7 +55,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     entities.append(BeszelBatterySensor(coordinator, system))
 
                 for device in smart_devices_data.get(system.id, []):
-                    if device.get("temp") is not None:
+                    temp = device.get("temp")
+                    if temp not in (None, 0):
                         entities.append(BeszelSmartTemperatureSensor(coordinator, system, device))
 
             except Exception as e:
@@ -117,9 +118,7 @@ class BeszelSmartBaseSensor(BeszelBaseSensor):
 
     @property
     def smart_device_label(self):
-        device_data = self.smart_device_data
-        model = device_data.get("model") or self._disk_name
-        return model.split()[0] if " " in model else model
+        return self._disk_name or "disk"
 
 class BeszelCPUSensor(BeszelBaseSensor):
     @property
