@@ -5,6 +5,17 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, LOGGER
 
+
+def _normalize_smart_attribute_name(name: str) -> str:
+    return (
+        name.strip()
+        .lower()
+        .replace(" ", "_")
+        .replace(".", "")
+        .replace("-", "_")
+        .replace("/", "_")
+    )
+
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
@@ -92,7 +103,7 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
 
     @property
     def name(self):
-        label = self._disk_name or "disk"
+        label = (self._disk_name or "disk").upper()
         return f"{self.system.name} {label} S.M.A.R.T." if self.system else None
 
     @property
@@ -146,5 +157,23 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
             value = device_data.get(key)
             if value:
                 attributes[key] = value
+
+        raw_attributes = device_data.get("attributes") or []
+        if raw_attributes:
+            attributes["smart_attributes"] = raw_attributes
+
+        for attribute in raw_attributes:
+            name = attribute.get("n")
+            if not name:
+                continue
+            normalized = _normalize_smart_attribute_name(name)
+            if "rs" in attribute and attribute.get("rs") not in (None, ""):
+                attributes[f"smart_{normalized}"] = attribute.get("rs")
+            elif "rv" in attribute:
+                attributes[f"smart_{normalized}"] = attribute.get("rv")
+
+            raw_value = attribute.get("rv")
+            if raw_value is not None:
+                attributes[f"smart_{normalized}_raw"] = raw_value
 
         return attributes

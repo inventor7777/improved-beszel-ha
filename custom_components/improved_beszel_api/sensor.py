@@ -15,6 +15,8 @@ from homeassistant.helpers.icon import icon_for_battery_level
 
 from .const import DOMAIN, LOGGER
 
+INTERFACE_SENSOR_ENABLE_THRESHOLD = 4
+
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
@@ -39,6 +41,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entities.append(BeszelTemperatureSensor(coordinator, system))
                 entities.append(BeszelUptimeSensor(coordinator, system))
                 entities.append(BeszelGPUSensor(coordinator, system))
+                entities.append(BeszelMemoryUsedSensor(coordinator, system))
+                entities.append(BeszelDiskUsedSensor(coordinator, system))
+                entities.append(BeszelSwapTotalSensor(coordinator, system))
+                entities.append(BeszelSwapUsedSensor(coordinator, system))
+                entities.append(BeszelLoadAverageSensor(coordinator, system, 0, "1m"))
+                entities.append(BeszelLoadAverageSensor(coordinator, system, 1, "5m"))
+                entities.append(BeszelLoadAverageSensor(coordinator, system, 2, "15m"))
 
                 # Get stats for this system
                 system_stats = stats_data.get(system.id, {})
@@ -58,6 +67,21 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     temp = device.get("temp")
                     if temp not in (None, 0):
                         entities.append(BeszelSmartTemperatureSensor(coordinator, system, device))
+
+                for temp_name in system_stats.get("t", {}):
+                    entities.append(BeszelNamedTemperatureSensor(coordinator, system, temp_name))
+
+                for interface_name in system_stats.get("ni", {}):
+                    entities.append(
+                        BeszelInterfaceCounterSensor(
+                            coordinator, system, interface_name, "rx"
+                        )
+                    )
+                    entities.append(
+                        BeszelInterfaceCounterSensor(
+                            coordinator, system, interface_name, "tx"
+                        )
+                    )
 
             except Exception as e:
                 LOGGER.error(f"Failed to create sensors for system {system.name if hasattr(system, 'name') else 'unknown'}: {e}")
@@ -85,6 +109,11 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
     @property
     def stats_data(self):
         return self.coordinator.data.get('stats', {}).get(self._system_id, {})
+
+    @property
+    def system_info(self):
+        sys = self.system
+        return getattr(sys, "info", {}) if sys else {}
 
     @property
     def device_info(self):
@@ -118,7 +147,7 @@ class BeszelSmartBaseSensor(BeszelBaseSensor):
 
     @property
     def smart_device_label(self):
-        return self._disk_name or "disk"
+        return (self._disk_name or "disk").upper()
 
 class BeszelCPUSensor(BeszelBaseSensor):
     @property
@@ -135,7 +164,7 @@ class BeszelCPUSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.system.info.get("cpu") if self.system else None
+        return self.system_info.get("cpu")
 
     @property
     def native_unit_of_measurement(self):
@@ -161,7 +190,7 @@ class BeszelGPUSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.system.info.get("g",0.0) if self.system else None
+        return self.system_info.get("g", 0.0) if self.system else None
 
     @property
     def native_unit_of_measurement(self):
@@ -187,7 +216,7 @@ class BeszelRAMSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.system.info.get("mp") if self.system else None
+        return self.system_info.get("mp")
 
     @property
     def native_unit_of_measurement(self):
@@ -214,7 +243,7 @@ class BeszelDiskSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.system.info.get("dp") if self.system else None
+        return self.system_info.get("dp")
 
     @property
     def native_unit_of_measurement(self):
@@ -240,7 +269,8 @@ class BeszelBandwidthSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.system.info.get("bb") / 1024000 if self.system else None
+        bandwidth = self.system_info.get("bb")
+        return bandwidth / 1024000 if bandwidth is not None else None
 
     @property
     def native_unit_of_measurement(self):
@@ -274,7 +304,8 @@ class BeszelNetworkReceiveSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.stats_data.get("b")[1] / 1024 if self.system else None
+        bandwidth = self.stats_data.get("b")
+        return bandwidth[1] / 1024 if bandwidth and len(bandwidth) > 1 else None
 
     @property
     def native_unit_of_measurement(self):
@@ -307,7 +338,8 @@ class BeszelNetworkSendSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.stats_data.get("b")[0] / 1024 if self.system else None
+        bandwidth = self.stats_data.get("b")
+        return bandwidth[0] / 1024 if bandwidth and len(bandwidth) > 0 else None
 
     @property
     def native_unit_of_measurement(self):
@@ -337,7 +369,7 @@ class BeszelTemperatureSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.system.info.get("dt") if self.system else None
+        return self.system_info.get("dt")
 
     @property
     def device_class(self):
@@ -382,6 +414,243 @@ class BeszelSmartTemperatureSensor(BeszelSmartBaseSensor):
         return SensorStateClass.MEASUREMENT
 
 
+class BeszelNamedTemperatureSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, temperature_name):
+        super().__init__(coordinator, system)
+        self._temperature_name = temperature_name
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_temperature_{self._temperature_name}"
+
+    @property
+    def name(self):
+        return f"{self.system.name} {self._temperature_name} Temperature" if self.system else None
+
+    @property
+    def native_value(self):
+        temperatures = self.stats_data.get("t", {})
+        return temperatures.get(self._temperature_name)
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.TEMPERATURE
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfTemperature.CELSIUS
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
+
+
+class BeszelLoadAverageSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, index, label):
+        super().__init__(coordinator, system)
+        self._index = index
+        self._label = label
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_load_average_{self._label}"
+
+    @property
+    def name(self):
+        return f"{self.system.name} Load Average {self._label}" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:chart-line"
+
+    @property
+    def native_value(self):
+        load_avg = self.stats_data.get("la") or self.system_info.get("la")
+        if load_avg and len(load_avg) > self._index:
+            return load_avg[self._index]
+        return None
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def suggested_display_precision(self):
+        return 2
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
+
+
+class BeszelMemoryUsedSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_memory_used"
+
+    @property
+    def name(self):
+        return f"{self.system.name} Memory Used" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:memory"
+
+    @property
+    def native_value(self):
+        return self.stats_data.get("mu")
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfInformation.GIGABYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+
+class BeszelDiskUsedSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_disk_used"
+
+    @property
+    def name(self):
+        return f"{self.system.name} Disk Used" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:harddisk"
+
+    @property
+    def native_value(self):
+        return self.stats_data.get("du")
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfInformation.GIGABYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+
+class BeszelSwapTotalSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_swap_total"
+
+    @property
+    def name(self):
+        return f"{self.system.name} Swap Total" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:swap-horizontal"
+
+    @property
+    def native_value(self):
+        return self.stats_data.get("s")
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfInformation.GIGABYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+
+class BeszelSwapUsedSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_swap_used"
+
+    @property
+    def name(self):
+        return f"{self.system.name} Swap Used" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:swap-horizontal"
+
+    @property
+    def native_value(self):
+        return self.stats_data.get("su")
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfInformation.GIGABYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+
+class BeszelInterfaceCounterSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, interface_name, direction):
+        super().__init__(coordinator, system)
+        self._interface_name = interface_name
+        self._direction = direction
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_{self._interface_name}_{self._direction}_bytes"
+
+    @property
+    def name(self):
+        label = "RX" if self._direction == "rx" else "TX"
+        return f"{self.system.name} {self._interface_name} {label} Bytes" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:download-network" if self._direction == "rx" else "mdi:upload-network"
+
+    @property
+    def native_value(self):
+        interface_data = self.stats_data.get("ni", {}).get(self._interface_name)
+        if not interface_data or len(interface_data) < 4:
+            return None
+        return interface_data[2] if self._direction == "rx" else interface_data[3]
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfInformation.BYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.TOTAL_INCREASING
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        interface_count = len(self.stats_data.get("ni", {}))
+        return interface_count <= INTERFACE_SENSOR_ENABLE_THRESHOLD
+
+
 class BeszelUptimeSensor(BeszelBaseSensor):
     @property
     def unique_id(self):
@@ -397,7 +666,8 @@ class BeszelUptimeSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.system.info.get("u") / 86400 if self.system else None
+        uptime = self.system_info.get("u")
+        return uptime / 86400 if uptime is not None else None
 
     @property
     def suggested_display_precision(self):
