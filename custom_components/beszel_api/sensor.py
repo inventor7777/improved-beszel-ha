@@ -3,6 +3,7 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from homeassistant.const import UnitOfTime
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.icon import icon_for_battery_level
 
@@ -82,7 +83,7 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
         return {
             "identifiers": {(DOMAIN, sys.id)},
             "name": sys.name,
-            "manufacturer": "Beszel",
+            "manufacturer": "Improved Beszel API",
             "model": info.get("m"),
             "sw_version": info.get("v"),
             "hw_version": info.get("k"),
@@ -323,7 +324,7 @@ class BeszelUptimeSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.system.info.get("u") / 60 if self.system else None
+        return self.system.info.get("u") / 3600 if self.system else None
 
     @property
     def suggested_display_precision(self):
@@ -331,11 +332,15 @@ class BeszelUptimeSensor(BeszelBaseSensor):
 
     @property
     def state_class(self):
-        return SensorStateClass.TOTAL_INCREASING
+        return SensorStateClass.MEASUREMENT
 
     @property
     def native_unit_of_measurement(self):
-        return "minutes"
+        return UnitOfTime.HOURS
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DURATION
 
 class BeszelEFSDiskSensor(BeszelBaseSensor):
     def __init__(self, coordinator, system, disk_name):

@@ -9,7 +9,7 @@ class BeszelConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
         if user_input is not None:
             return self.async_create_entry(
-                title="Beszel API",
+                title="Improved Beszel API",
                 data=user_input
             )
 

@@ -51,7 +51,7 @@ class BeszelStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
         return {
             "identifiers": {(DOMAIN, sys.id)},
             "name": sys.name,
-            "manufacturer": "Beszel",
+            "manufacturer": "Improved Beszel API",
             "model": info.get("m"),
             "sw_version": info.get("v"),
             "hw_version": info.get("k"),

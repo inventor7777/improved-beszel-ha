@@ -21,7 +21,7 @@ async def async_setup_entry(hass, entry):
             systems = await hass.async_add_executor_job(client.get_systems)
 
             if not systems:
-                LOGGER.warning("No systems found in Beszel API")
+                LOGGER.warning("No systems found in Improved Beszel API")
                 return {"systems": [], "stats": {}}
 
             # Create a stats dictionary to store stats by system ID
@@ -48,7 +48,7 @@ async def async_setup_entry(hass, entry):
     coordinator = DataUpdateCoordinator(
         hass,
         LOGGER,
-        name="Beszel API",
+        name="Improved Beszel API",
         update_method=async_update_data,
         update_interval=timedelta(seconds=UPDATE_INTERVAL),
     )
@@ -69,7 +69,7 @@ async def async_setup_entry(hass, entry):
         coordinator_hub = DataUpdateCoordinator(
             hass,
             LOGGER,
-            name="Beszel Hub",
+            name="Improved Beszel Hub",
             update_method=async_update_hub,
             update_interval=timedelta(hours=1),
         )

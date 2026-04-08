@@ -2,14 +2,14 @@
   "config": {
     "step": {
       "user": {
-        "title": "Add Beszel API configuration",
-        "description": "Enter your Beszel API connection details",
+        "title": "Add Improved Beszel API configuration",
+        "description": "Enter your Improved Beszel API connection details",
         "data": {
           "url": "URL",
           "username": "Username (optional)",
           "password": "Password (optional)",
           "update_check": "Check for updates",
-          "verify_ssl": "Verify Beszel API SSL certificate"
+          "verify_ssl": "Verify Improved Beszel API SSL certificate"
         },
         "data_description": {
           "update_check": "Connects periodically to github.com to check for new releases"
@@ -20,14 +20,14 @@
   "options": {
     "step": {
       "init": {
-          "title": "Update Beszel API configuration",
-          "description": "Change your Beszel API connection details",
+          "title": "Update Improved Beszel API configuration",
+          "description": "Change your Improved Beszel API connection details",
           "data": {
             "url": "URL",
             "username": "Username (optional)",
             "password": "Password (optional)",
             "update_check": "Check for updates",
-            "verify_ssl": "Verify Beszel API SSL certificate"
+            "verify_ssl": "Verify Improved Beszel API SSL certificate"
           },
           "data_description": {
             "update_check": "Connects periodically to github.com to check for new releases"
