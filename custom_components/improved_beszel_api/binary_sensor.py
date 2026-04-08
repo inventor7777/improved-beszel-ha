@@ -2,6 +2,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, LOGGER
 
@@ -90,6 +91,10 @@ class BeszelStatusBinarySensor(BeszelBaseBinarySensor):
     def device_class(self):
         return BinarySensorDeviceClass.CONNECTIVITY
 
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
+
 
 class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
     def __init__(self, coordinator, system, device_data):
@@ -124,6 +129,10 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
     @property
     def device_class(self):
         return BinarySensorDeviceClass.PROBLEM
+
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
 
     @property
     def icon(self):

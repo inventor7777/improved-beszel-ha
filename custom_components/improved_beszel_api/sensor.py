@@ -10,6 +10,7 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfTime,
 )
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.icon import icon_for_battery_level
 
@@ -418,6 +419,10 @@ class BeszelSmartTemperatureSensor(BeszelSmartBaseSensor):
     def state_class(self):
         return SensorStateClass.MEASUREMENT
 
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
+
 
 class BeszelNamedTemperatureSensor(BeszelBaseSensor):
     def __init__(self, coordinator, system, temperature_name):
@@ -690,6 +695,10 @@ class BeszelUptimeSensor(BeszelBaseSensor):
     @property
     def device_class(self):
         return SensorDeviceClass.DURATION
+
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
 
 class BeszelEFSDiskSensor(BeszelBaseSensor):
     def __init__(self, coordinator, system, disk_name):
