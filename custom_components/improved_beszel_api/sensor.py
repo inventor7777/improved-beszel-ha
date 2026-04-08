@@ -83,7 +83,7 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
         return {
             "identifiers": {(DOMAIN, sys.id)},
             "name": sys.name,
-            "manufacturer": "Improved Beszel API",
+            "manufacturer": "Beszel",
             "model": info.get("m"),
             "sw_version": info.get("v"),
             "hw_version": info.get("k"),

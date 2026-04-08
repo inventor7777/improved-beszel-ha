@@ -112,7 +112,7 @@ class BeszelUpdateApi:
     def get_latest_release(self) -> tuple[str | None, str | None]:
         """Query GitHub releases API and return (tag_name, html_url)."""
         import requests
-        api_url = "https://api.github.com/repos/inventor7777/improved-beszel-api/releases/latest"
+        api_url = "https://api.github.com/repos/henrygd/beszel/releases/latest"
         headers = {"Accept": "application/vnd.github.v3+json"}
         try:
             r = requests.get(api_url, headers=headers, timeout=self.timeout)

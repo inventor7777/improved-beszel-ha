@@ -9,7 +9,7 @@
           "username": "Username (optional)",
           "password": "Password (optional)",
           "update_check": "Check for updates",
-          "verify_ssl": "Verify Improved Beszel API SSL certificate"
+          "verify_ssl": "Verify Beszel SSL certificate"
         },
         "data_description": {
           "update_check": "Connects periodically to github.com to check for new releases"
@@ -27,7 +27,7 @@
             "username": "Username (optional)",
             "password": "Password (optional)",
             "update_check": "Check for updates",
-            "verify_ssl": "Verify Improved Beszel API SSL certificate"
+            "verify_ssl": "Verify Beszel SSL certificate"
           },
           "data_description": {
             "update_check": "Connects periodically to github.com to check for new releases"

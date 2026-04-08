@@ -7,7 +7,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     hub_coordinator = data["hub"]
     
     if hub_coordinator is None:
-        LOGGER.debug("Update check is disabled, skipping Improved Beszel Hub Update entity")
+        LOGGER.debug("Update check is disabled, skipping Beszel Hub Update entity")
         return
     
     async_add_entities([BeszelHubUpdate(hub_coordinator, entry.entry_id, entry.data.get("url"))])
@@ -24,7 +24,7 @@ class BeszelHubUpdate(CoordinatorEntity, UpdateEntity):
 
     @property
     def name(self):
-        return "Improved Beszel Hub Update"
+        return "Beszel Hub Update"
 
     @property
     def installed_version(self):
@@ -51,7 +51,7 @@ class BeszelHubUpdate(CoordinatorEntity, UpdateEntity):
         hub = self.coordinator.data
         return {
             "identifiers": {(DOMAIN, self._entry_id)},
-            "name": "Improved Beszel Hub",
-            "manufacturer": "Improved Beszel API",
+            "name": "Beszel Hub",
+            "manufacturer": "Beszel",
             "sw_version": hub.get("hub_version"),
         }

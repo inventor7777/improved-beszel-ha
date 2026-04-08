@@ -1,6 +1,6 @@
 import logging
 
-DOMAIN = "beszel_api"
+DOMAIN = "improved_beszel_api"
 CONF_URL = "url"
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"

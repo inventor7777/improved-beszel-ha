@@ -9,7 +9,7 @@
           "username": "Benutzername (optional)",
           "password": "Passwort (optional)",
           "update_check": "Nach Updates suchen",
-            "verify_ssl": "Improved Beszel API SSL Zertifikat überprüfen"
+            "verify_ssl": "Beszel SSL Zertifikat überprüfen"
         },
         "data_description": {
           "update_check": "Verbindet sich periodisch mit github.com, um nach neuen Releases zu suchen"
@@ -27,7 +27,7 @@
           "username": "Benutzername (optional)",
           "password": "Passwort (optional)",
           "update_check": "Nach Updates suchen",
-          "verify_ssl": "Improved Beszel API SSL Zertifikat überprüfen"
+          "verify_ssl": "Beszel SSL Zertifikat überprüfen"
         },
         "data_description": {
           "update_check": "Verbindet sich periodisch mit github.com, um nach neuen Releases zu suchen"

@@ -1,7 +1,7 @@
 {
-  "domain": "beszel_api",
+  "domain": "improved_beszel_api",
   "name": "Improved Beszel API",
-  "codeowners": ["@ronjar"],
+  "codeowners": ["@inventor7777"],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/inventor7777/improved-beszel-ha",
