@@ -24,6 +24,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         # Get systems and stats from coordinator data
         systems = coordinator.data['systems']
         stats_data = coordinator.data.get('stats', {})
+        smart_devices_data = coordinator.data.get("smart_devices", {})
 
         for system in systems:
             try:
@@ -52,6 +53,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 # Create battery sensor if data is available
                 if system_stats and 'bat' in system_stats and isinstance(system_stats['bat'], list):
                     entities.append(BeszelBatterySensor(coordinator, system))
+
+                for device in smart_devices_data.get(system.id, []):
+                    if device.get("temp") is not None:
+                        entities.append(BeszelSmartTemperatureSensor(coordinator, system, device))
 
             except Exception as e:
                 LOGGER.error(f"Failed to create sensors for system {system.name if hasattr(system, 'name') else 'unknown'}: {e}")
@@ -94,6 +99,27 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
             "sw_version": info.get("v"),
             "hw_version": info.get("k"),
         }
+
+
+class BeszelSmartBaseSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, device_data):
+        super().__init__(coordinator, system)
+        self._device_id = device_data.get("id", "")
+        self._device_name = device_data.get("name", "")
+        self._disk_name = self._device_name.replace("/dev/", "")
+
+    @property
+    def smart_device_data(self):
+        for device in self.coordinator.data.get("smart_devices", {}).get(self._system_id, []):
+            if device.get("id") == self._device_id:
+                return device
+        return {}
+
+    @property
+    def smart_device_label(self):
+        device_data = self.smart_device_data
+        model = device_data.get("model") or self._disk_name
+        return model.split()[0] if " " in model else model
 
 class BeszelCPUSensor(BeszelBaseSensor):
     @property
@@ -313,6 +339,36 @@ class BeszelTemperatureSensor(BeszelBaseSensor):
     @property
     def native_value(self):
         return self.system.info.get("dt") if self.system else None
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.TEMPERATURE
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfTemperature.CELSIUS
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+
+class BeszelSmartTemperatureSensor(BeszelSmartBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_{self._disk_name}_smart_temperature"
+
+    @property
+    def name(self):
+        return (
+            f"{self.system.name} {self.smart_device_label} S.M.A.R.T. Temperature"
+            if self.system
+            else None
+        )
+
+    @property
+    def native_value(self):
+        return self.smart_device_data.get("temp")
 
     @property
     def device_class(self):

@@ -1,19 +1,31 @@
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from .const import DOMAIN
+from .const import DOMAIN, LOGGER
 
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
     entities = []
 
-    systems = coordinator.data['systems']
+    try:
+        systems = coordinator.data["systems"]
+        smart_devices = coordinator.data.get("smart_devices", {})
 
-    for system in systems:
-        entities.append(BeszelStatusBinarySensor(coordinator, system))
-    async_add_entities(entities)
+        for system in systems:
+            entities.append(BeszelStatusBinarySensor(coordinator, system))
+            for device in smart_devices.get(system.id, []):
+                entities.append(BeszelSmartBinarySensor(coordinator, system, device))
 
-class BeszelStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
+        async_add_entities(entities)
+    except Exception as e:
+        LOGGER.error(f"Failed to setup binary sensors: {e}")
+        raise
+
+
+class BeszelBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def __init__(self, coordinator, system):
         super().__init__(coordinator)
         self._system_id = system.id
@@ -25,22 +37,6 @@ class BeszelStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
             if s.id == self._system_id:
                 return s
         return None
-
-    @property
-    def unique_id(self):
-        return f"beszel_{self._system_id}_status"
-
-    @property
-    def name(self):
-        return f"{self.system.name} Status" if self.system else None
-
-    @property
-    def is_on(self):
-        return self.system.status == "up" if self.system else False
-
-    @property
-    def device_class(self):
-        return "connectivity"
 
     @property
     def device_info(self):
@@ -56,3 +52,102 @@ class BeszelStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
             "sw_version": info.get("v"),
             "hw_version": info.get("k"),
         }
+
+
+class BeszelStatusBinarySensor(BeszelBaseBinarySensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_status"
+
+    @property
+    def name(self):
+        return f"{self.system.name} Status" if self.system else None
+
+    @property
+    def is_on(self):
+        return self.system.status == "up" if self.system else False
+
+    @property
+    def device_class(self):
+        return BinarySensorDeviceClass.CONNECTIVITY
+
+
+class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
+    def __init__(self, coordinator, system, device_data):
+        super().__init__(coordinator, system)
+        self._device_id = device_data.get("id", "")
+        self._device_name = device_data.get("name", "")
+        self._disk_name = self._device_name.replace("/dev/", "")
+
+    @property
+    def smart_device_data(self):
+        for device in self.coordinator.data.get("smart_devices", {}).get(self._system_id, []):
+            if device.get("id") == self._device_id:
+                return device
+        return {}
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_{self._disk_name}_smart"
+
+    @property
+    def name(self):
+        device_data = self.smart_device_data
+        model = device_data.get("model") or self._disk_name
+        short_model = model.split()[0] if " " in model else model
+        return f"{self.system.name} {short_model} S.M.A.R.T." if self.system else None
+
+    @property
+    def is_on(self):
+        device_data = self.smart_device_data
+        if not device_data:
+            return None
+        return device_data.get("state") != "PASSED"
+
+    @property
+    def device_class(self):
+        return BinarySensorDeviceClass.PROBLEM
+
+    @property
+    def icon(self):
+        device_data = self.smart_device_data
+        disk_type = (device_data.get("type") or "").lower()
+        if self.is_on:
+            return "mdi:harddisk-remove"
+        if "nvme" in self._disk_name.lower() or disk_type == "nvme":
+            return "mdi:expansion-card"
+        return "mdi:harddisk"
+
+    @property
+    def extra_state_attributes(self):
+        device_data = self.smart_device_data
+        if not device_data:
+            return {}
+
+        attributes = {"device": self._device_name, "health_state": device_data.get("state", "")}
+
+        temp = device_data.get("temp")
+        if temp is not None:
+            attributes["temperature"] = temp
+            attributes["temperature_unit"] = "°C"
+
+        capacity = device_data.get("capacity", 0)
+        if capacity:
+            attributes["capacity_gb"] = round(capacity / (1024**3), 2)
+            attributes["capacity_tb"] = round(capacity / (1024**4), 2)
+
+        hours = device_data.get("hours")
+        if hours is not None:
+            attributes["power_on_hours"] = hours
+            attributes["power_on_days"] = round(hours / 24, 1)
+
+        cycles = device_data.get("cycles")
+        if cycles is not None:
+            attributes["power_cycles"] = cycles
+
+        for key in ("model", "serial", "firmware", "type"):
+            value = device_data.get(key)
+            if value:
+                attributes[key] = value
+
+        return attributes
