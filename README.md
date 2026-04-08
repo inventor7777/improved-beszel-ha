@@ -2,11 +2,12 @@
 
 Improved Beszel API is a Home Assistant custom integration for [Beszel](https://www.beszel.dev/).
 
-This project is a maintained fork of the original [`Ronjar/beszel-ha`](https://github.com/Ronjar/beszel-ha). The original integration was a great starting point, but this fork exists to keep development moving, merge fixes faster, and expose more of the useful data already available in the Beszel backend.
+This project is a maintained fork of the original [`Ronjar/beszel-ha`](https://github.com/Ronjar/beszel-ha). The original integration great but this fork exists to keep development moving, merge fixes faster, and expose more of the useful data already available in the Beszel backend.
 
 ## Disclaimer
 
-- This is a fork, not the original upstream integration.
+- This is a fork, not the original upstream integration. Credit goes fully to @Ronjar for creation and initial development.
+- All development after the original fork was dome by GPT 5.4 Codex under close supervision and testing.
 - It is intended to work with normal Beszel / Beszel Hub.
 - The Home Assistant integration name is `Improved Beszel API`.
 - The custom component domain/install path is `improved_beszel_api`.
@@ -57,10 +58,6 @@ Because this repository is not part of the default HACS lists, add it as a custo
 5. Restart Home Assistant if needed.
 6. Install `Improved Beszel API` from HACS.
 7. Add the integration from the Home Assistant integrations page.
-
-HACS/Home Assistant will install it under:
-
-`/config/custom_components/improved_beszel_api`
 
 ## Setup
 
