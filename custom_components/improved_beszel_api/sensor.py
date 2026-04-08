@@ -147,7 +147,10 @@ class BeszelSmartBaseSensor(BeszelBaseSensor):
 
     @property
     def smart_device_label(self):
-        return (self._disk_name or "disk").upper()
+        label = self._disk_name or "disk"
+        if label.lower().startswith("nvme"):
+            return f"NVMe{label[4:]}"
+        return label.upper()
 
 class BeszelCPUSensor(BeszelBaseSensor):
     @property
@@ -270,11 +273,11 @@ class BeszelBandwidthSensor(BeszelBaseSensor):
     @property
     def native_value(self):
         bandwidth = self.system_info.get("bb")
-        return bandwidth / 1024000 if bandwidth is not None else None
+        return bandwidth / (1024**3) if bandwidth is not None else None
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfDataRate.MEGABYTES_PER_SECOND
+        return UnitOfDataRate.GIGABYTES_PER_SECOND
 
     @property
     def device_class(self):
@@ -446,7 +449,8 @@ class BeszelNamedTemperatureSensor(BeszelBaseSensor):
 
     @property
     def entity_registry_enabled_default(self) -> bool:
-        return False
+        interface_count = len(self.stats_data.get("ni", {}))
+        return interface_count <= INTERFACE_SENSOR_ENABLE_THRESHOLD
 
 
 class BeszelLoadAverageSensor(BeszelBaseSensor):
@@ -631,11 +635,12 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
         interface_data = self.stats_data.get("ni", {}).get(self._interface_name)
         if not interface_data or len(interface_data) < 4:
             return None
-        return interface_data[2] if self._direction == "rx" else interface_data[3]
+        bytes_total = interface_data[2] if self._direction == "rx" else interface_data[3]
+        return bytes_total / (1024**3)
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfInformation.BYTES
+        return UnitOfInformation.GIGABYTES
 
     @property
     def device_class(self):
@@ -647,8 +652,7 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
 
     @property
     def entity_registry_enabled_default(self) -> bool:
-        interface_count = len(self.stats_data.get("ni", {}))
-        return interface_count <= INTERFACE_SENSOR_ENABLE_THRESHOLD
+        return False
 
 
 class BeszelUptimeSensor(BeszelBaseSensor):
