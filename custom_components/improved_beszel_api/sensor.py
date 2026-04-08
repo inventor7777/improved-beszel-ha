@@ -70,6 +70,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     temp = device.get("temp")
                     if temp not in (None, 0):
                         entities.append(BeszelSmartTemperatureSensor(coordinator, system, device))
+                    if device.get("hours") is not None:
+                        entities.append(BeszelSmartPowerOnHoursSensor(coordinator, system, device))
 
                 for temp_name in system_stats.get("t", {}):
                     entities.append(BeszelNamedTemperatureSensor(coordinator, system, temp_name))
@@ -422,6 +424,47 @@ class BeszelSmartTemperatureSensor(BeszelSmartBaseSensor):
     @property
     def entity_category(self):
         return EntityCategory.DIAGNOSTIC
+
+
+class BeszelSmartPowerOnHoursSensor(BeszelSmartBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_{self._disk_name}_smart_power_on_hours"
+
+    @property
+    def name(self):
+        return (
+            f"{self.system.name} {self.smart_device_label} S.M.A.R.T. Power On Hours"
+            if self.system
+            else None
+        )
+
+    @property
+    def native_value(self):
+        return self.smart_device_data.get("hours")
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfTime.HOURS
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DURATION
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        smart_device_count = len(
+            self.coordinator.data.get("smart_devices", {}).get(self._system_id, [])
+        )
+        return smart_device_count <= 2
 
 
 class BeszelNamedTemperatureSensor(BeszelBaseSensor):
