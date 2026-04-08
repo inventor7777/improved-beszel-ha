@@ -43,14 +43,16 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entities.append(BeszelGPUSensor(coordinator, system))
                 entities.append(BeszelMemoryUsedSensor(coordinator, system))
                 entities.append(BeszelDiskUsedSensor(coordinator, system))
-                entities.append(BeszelSwapTotalSensor(coordinator, system))
-                entities.append(BeszelSwapUsedSensor(coordinator, system))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 0, "1m"))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 1, "5m"))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 2, "15m"))
 
                 # Get stats for this system
                 system_stats = stats_data.get(system.id, {})
+
+                if system_stats.get("s") is not None or system_stats.get("su") is not None:
+                    entities.append(BeszelSwapTotalSensor(coordinator, system))
+                    entities.append(BeszelSwapUsedSensor(coordinator, system))
 
                 # Create EFS sensors if EFS data is available
                 if system_stats and 'efs' in system_stats and isinstance(system_stats['efs'], dict):
@@ -273,11 +275,11 @@ class BeszelBandwidthSensor(BeszelBaseSensor):
     @property
     def native_value(self):
         bandwidth = self.system_info.get("bb")
-        return bandwidth / (1024**3) if bandwidth is not None else None
+        return bandwidth / 1024000 if bandwidth is not None else None
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfDataRate.GIGABYTES_PER_SECOND
+        return UnitOfDataRate.MEGABYTES_PER_SECOND
 
     @property
     def device_class(self):
@@ -289,7 +291,7 @@ class BeszelBandwidthSensor(BeszelBaseSensor):
     
     @property
     def suggested_display_precision(self):
-        return 8
+        return 2
 
 
 class BeszelNetworkReceiveSensor(BeszelBaseSensor):
