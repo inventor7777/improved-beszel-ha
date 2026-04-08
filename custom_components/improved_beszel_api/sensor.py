@@ -278,7 +278,7 @@ class BeszelBandwidthSensor(BeszelBaseSensor):
     @property
     def native_value(self):
         bandwidth = self.system_info.get("bb")
-        return bandwidth / 1024000 if bandwidth is not None else None
+        return bandwidth / 1_000_000 if bandwidth is not None else None
 
     @property
     def native_unit_of_measurement(self):
@@ -313,7 +313,7 @@ class BeszelNetworkReceiveSensor(BeszelBaseSensor):
     @property
     def native_value(self):
         bandwidth = self.stats_data.get("b")
-        return bandwidth[1] / 1024 if bandwidth and len(bandwidth) > 1 else None
+        return bandwidth[1] / 1_000 if bandwidth and len(bandwidth) > 1 else None
 
     @property
     def native_unit_of_measurement(self):
@@ -347,7 +347,7 @@ class BeszelNetworkSendSensor(BeszelBaseSensor):
     @property
     def native_value(self):
         bandwidth = self.stats_data.get("b")
-        return bandwidth[0] / 1024 if bandwidth and len(bandwidth) > 0 else None
+        return bandwidth[0] / 1_000 if bandwidth and len(bandwidth) > 0 else None
 
     @property
     def native_unit_of_measurement(self):
@@ -434,7 +434,7 @@ class BeszelSmartPowerOnHoursSensor(BeszelSmartBaseSensor):
     @property
     def name(self):
         return (
-            f"{self.system.name} {self.smart_device_label} S.M.A.R.T. Power On Hours"
+            f"{self.system.name} {self.smart_device_label} S.M.A.R.T. Power On Time"
             if self.system
             else None
         )
@@ -560,7 +560,7 @@ class BeszelMemoryUsedSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfInformation.GIGABYTES
+        return UnitOfInformation.GIBIBYTES
 
     @property
     def device_class(self):
@@ -590,7 +590,7 @@ class BeszelDiskUsedSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfInformation.GIGABYTES
+        return UnitOfInformation.GIBIBYTES
 
     @property
     def device_class(self):
@@ -620,7 +620,7 @@ class BeszelSwapTotalSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfInformation.GIGABYTES
+        return UnitOfInformation.GIBIBYTES
 
     @property
     def device_class(self):
@@ -650,7 +650,7 @@ class BeszelSwapUsedSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfInformation.GIGABYTES
+        return UnitOfInformation.GIBIBYTES
 
     @property
     def device_class(self):
@@ -686,11 +686,11 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
         if not interface_data or len(interface_data) < 4:
             return None
         bytes_total = interface_data[2] if self._direction == "rx" else interface_data[3]
-        return bytes_total / (1024**3)
+        return bytes_total / 1_000_000_000
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfInformation.GIGABYTES
+        return UnitOfInformation.GIBIBYTES
 
     @property
     def device_class(self):
@@ -794,8 +794,8 @@ class BeszelEFSDiskSensor(BeszelBaseSensor):
         disk_data = efs_data.get(self._disk_name, {})
 
         return {
-            "total_disk_space_gb": disk_data.get('d'),
-            "disk_used_gb": disk_data.get('du'),
+            "total_disk_space_gib": disk_data.get('d'),
+            "disk_used_gib": disk_data.get('du'),
             "read_mb_s": disk_data.get('r'),
             "write_mb_s": disk_data.get('w'),
         }
@@ -861,7 +861,7 @@ class BeszelRAMTotalSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfInformation.GIGABYTES
+        return UnitOfInformation.GIBIBYTES
 
     @property
     def device_class(self):
