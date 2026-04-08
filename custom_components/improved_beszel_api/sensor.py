@@ -673,8 +673,8 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        label = "RX" if self._direction == "rx" else "TX"
-        return f"{self.system.name} {self._interface_name} {label} Bytes" if self.system else None
+        label = "RX In" if self._direction == "rx" else "TX Out"
+        return f"{self.system.name} {self._interface_name} {label}" if self.system else None
 
     @property
     def icon(self):
