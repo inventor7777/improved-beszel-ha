@@ -3,7 +3,13 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfTime
+from homeassistant.const import (
+    PERCENTAGE,
+    UnitOfDataRate,
+    UnitOfInformation,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.icon import icon_for_battery_level
 
@@ -108,7 +114,7 @@ class BeszelCPUSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "%"
+        return PERCENTAGE
 
     @property
     def state_class(self):
@@ -134,7 +140,7 @@ class BeszelGPUSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "%"
+        return PERCENTAGE
 
     @property
     def state_class(self):
@@ -160,7 +166,7 @@ class BeszelRAMSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "%"
+        return PERCENTAGE
 
     @property
     def state_class(self):
@@ -187,7 +193,7 @@ class BeszelDiskSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "%"
+        return PERCENTAGE
 
     @property
     def state_class(self):
@@ -213,7 +219,11 @@ class BeszelBandwidthSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "MB/s"
+        return UnitOfDataRate.MEGABYTES_PER_SECOND
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_RATE
 
     @property
     def state_class(self):
@@ -243,7 +253,11 @@ class BeszelNetworkReceiveSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "KB/s"
+        return UnitOfDataRate.KILOBYTES_PER_SECOND
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_RATE
 
     @property
     def state_class(self):
@@ -272,7 +286,11 @@ class BeszelNetworkSendSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "KB/s"
+        return UnitOfDataRate.KILOBYTES_PER_SECOND
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_RATE
 
     @property
     def state_class(self):
@@ -302,7 +320,7 @@ class BeszelTemperatureSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "°C"
+        return UnitOfTemperature.CELSIUS
 
     @property
     def state_class(self):
@@ -324,7 +342,7 @@ class BeszelUptimeSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.system.info.get("u") / 3600 if self.system else None
+        return self.system.info.get("u") / 86400 if self.system else None
 
     @property
     def suggested_display_precision(self):
@@ -336,7 +354,7 @@ class BeszelUptimeSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfTime.HOURS
+        return UnitOfTime.DAYS
 
     @property
     def device_class(self):
@@ -377,7 +395,7 @@ class BeszelEFSDiskSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "%"
+        return PERCENTAGE
 
     @property
     def state_class(self):
@@ -436,7 +454,7 @@ class BeszelBatterySensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "%"
+        return PERCENTAGE
 
 
 class BeszelRAMTotalSensor(BeszelBaseSensor):
@@ -460,7 +478,11 @@ class BeszelRAMTotalSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "GB"
+        return UnitOfInformation.GIGABYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
 
     @property
     def state_class(self):
@@ -501,7 +523,11 @@ class BeszelDiskTotalSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return "GB"
+        return UnitOfInformation.GIGABYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
 
     @property
     def state_class(self):
