@@ -80,6 +80,16 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
                 for interface_name in system_stats.get("ni", {}):
                     entities.append(
+                        BeszelInterfaceBandwidthSensor(
+                            coordinator, system, interface_name, "rx"
+                        )
+                    )
+                    entities.append(
+                        BeszelInterfaceBandwidthSensor(
+                            coordinator, system, interface_name, "tx"
+                        )
+                    )
+                    entities.append(
                         BeszelInterfaceCounterSensor(
                             coordinator, system, interface_name, "rx"
                         )
@@ -273,7 +283,7 @@ class BeszelBandwidthSensor(BeszelBaseSensor):
 
     @property
     def icon(self):
-        return "mdi:router-network"
+        return "mdi:network"
 
     @property
     def native_value(self):
@@ -742,7 +752,7 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        label = "RX In" if self._direction == "rx" else "TX Out"
+        label = "RX" if self._direction == "rx" else "TX"
         return f"{self.system.name} {self._interface_name} {label}" if self.system else None
 
     @property
@@ -768,6 +778,54 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.TOTAL_INCREASING
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
+
+
+class BeszelInterfaceBandwidthSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, interface_name, direction):
+        super().__init__(coordinator, system)
+        self._interface_name = interface_name
+        self._direction = direction
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_{self._interface_name}_{self._direction}_bandwidth"
+
+    @property
+    def name(self):
+        label = "Bandwidth RX" if self._direction == "rx" else "Bandwidth TX"
+        return f"{self.system.name} {self._interface_name} {label}" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:download-network" if self._direction == "rx" else "mdi:upload-network"
+
+    @property
+    def native_value(self):
+        interface_data = self.stats_data.get("ni", {}).get(self._interface_name)
+        if not interface_data or len(interface_data) < 2:
+            return None
+        rate = interface_data[0] if self._direction == "rx" else interface_data[1]
+        return rate / 1_000_000
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfDataRate.MEGABYTES_PER_SECOND
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_RATE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def suggested_display_precision(self):
+        return 2
 
     @property
     def entity_registry_enabled_default(self) -> bool:

@@ -22,20 +22,21 @@ It currently exposes:
 - CPU usage
 - RAM usage percent
 - RAM total
-- Memory used
+- RAM used
 - Disk usage percent
 - Disk total
 - Disk used
+- Additional disk usage / used / total sensors for extra disks reported by Beszel, such as `SDA`, `SDA Used`, and `SDA Total`
 - Uptime
 - Main system temperature
 - Additional named temperatures from Beszel when available
 - Aggregate bandwidth
-- Network receive/send rate
+- Bandwidth RX / TX rate
+- Per-interface bandwidth RX / TX rate
 - Per-interface RX/TX byte counters
 - Swap total / used when the system reports swap
 - GPU usage when reported by Beszel
 - Battery when reported by Beszel
-- EFS disk usage and total sizes when available
 - Beszel Hub update status
 - S.M.A.R.T. disk health entities and attributes
 - S.M.A.R.T. temperature / power-on-hours sensors
@@ -43,8 +44,8 @@ It currently exposes:
 Some noisier or less universally useful entities are disabled by default, such as:
 
 - Load average sensors
-- Named temperature sensors
-- Some interface-level counters on systems with many interfaces
+- Named temperature sensors when a system reports more than 4 named temperature zones
+- Per-interface bandwidth and byte-counter sensors
 - S.M.A.R.T. diagnostic sensors when a system has more disks
 
 ## Installation
@@ -86,6 +87,19 @@ S.M.A.R.T. entities use disk-oriented names such as:
 - `test SDA S.M.A.R.T.`
 - `test SDA S.M.A.R.T. Temperature`
 - `test NVMe0 S.M.A.R.T. Power On Hours`
+
+Additional non-primary disks reported by Beszel follow the same disk-first pattern, for example:
+
+- `test SDA`
+- `test SDA Used`
+- `test SDA Total`
+
+Per-interface network entities follow the interface name and direction, for example:
+
+- `test enp0s31f6 Bandwidth RX`
+- `test enp0s31f6 Bandwidth TX`
+- `test enp0s31f6 RX`
+- `test enp0s31f6 TX`
 
 ## Licensing
 
