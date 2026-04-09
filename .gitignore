@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# NFS temporary files
+.nfs*
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual envs
+venv/
+.env/
+
+# VSCode
+.vscode/
+
+# JetBrains
+.idea/
