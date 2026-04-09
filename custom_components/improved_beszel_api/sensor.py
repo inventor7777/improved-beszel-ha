@@ -52,6 +52,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 system_stats = stats_data.get(system.id, {})
 
                 if system_stats.get("s") is not None or system_stats.get("su") is not None:
+                    if system_stats.get("s") is not None:
+                        entities.append(BeszelSwapSensor(coordinator, system))
                     entities.append(BeszelSwapTotalSensor(coordinator, system))
                     entities.append(BeszelSwapUsedSensor(coordinator, system))
 
@@ -708,6 +710,40 @@ class BeszelSwapTotalSensor(BeszelBaseSensor):
     @property
     def device_class(self):
         return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+
+class BeszelSwapSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_swap"
+
+    @property
+    def name(self):
+        return f"{self.system.name} Swap" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:swap-horizontal"
+
+    @property
+    def native_value(self):
+        swap_total = self.stats_data.get("s")
+        if swap_total is None or swap_total <= 0:
+            return None
+
+        swap_used = self.stats_data.get("su")
+        if swap_used is None:
+            swap_used = 0
+
+        return round((swap_used / swap_total) * 100, 2)
+
+    @property
+    def native_unit_of_measurement(self):
+        return PERCENTAGE
 
     @property
     def state_class(self):
