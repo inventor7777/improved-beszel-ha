@@ -16,6 +16,8 @@ In addition to the original sensors, it exposes:
 - Load average sensors
 - Named temperature sensors
 - Per-interface bandwidth and byte-counter sensors
+- Systemd service numbers
+- RAM cache
 - and more. 
 
 It also adds **adjustable polling interval**, proper **state/device classes** so that HA unit changes work seamlessly, saner unit defaults, *and better icon choices :)*
@@ -49,6 +51,7 @@ It currently exposes:
 - System connectivity / status
 - CPU usage
 - RAM usage percent
+- RAM cache usage (disabled by default)
 - RAM total
 - RAM used
 - Disk usage percent
@@ -70,6 +73,7 @@ It currently exposes:
 - Beszel Hub update status
 - S.M.A.R.T. disk health entities and attributes
 - S.M.A.R.T. temperature / power-on-hours sensors
+- Number of systemd services failed/running
 
 Some noisier or less universally useful entities are disabled by default, such as:
 
@@ -77,6 +81,7 @@ Some noisier or less universally useful entities are disabled by default, such a
 - Named temperature sensors when a system reports more than 4 named temperature zones
 - Per-interface bandwidth and byte-counter sensors
 - S.M.A.R.T. diagnostic sensors when a system has more disks
+- RAM cache used
 
 
 ## Setup
