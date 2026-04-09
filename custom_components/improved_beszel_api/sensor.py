@@ -43,6 +43,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entities.append(BeszelUptimeSensor(coordinator, system))
                 entities.append(BeszelGPUSensor(coordinator, system))
                 entities.append(BeszelMemoryUsedSensor(coordinator, system))
+                entities.append(BeszelMemoryCacheUsedSensor(coordinator, system))
                 entities.append(BeszelDiskUsedSensor(coordinator, system))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 0, "1m"))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 1, "5m"))
@@ -50,6 +51,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
                 # Get stats for this system
                 system_stats = stats_data.get(system.id, {})
+                system_info = getattr(system, "info", {})
+
+                if isinstance(system_info.get("sv"), list) and len(system_info["sv"]) >= 2:
+                    entities.append(BeszelTotalServicesSensor(coordinator, system))
+                    entities.append(BeszelFailedServicesSensor(coordinator, system))
 
                 if system_stats.get("s") is not None or system_stats.get("su") is not None:
                     if system_stats.get("s") is not None:
@@ -628,6 +634,86 @@ class BeszelMemoryUsedSensor(BeszelBaseSensor):
     @property
     def device_class(self):
         return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+
+class BeszelMemoryCacheUsedSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_memory_cache_used"
+
+    @property
+    def name(self):
+        return f"{self.system.name} RAM Cache Used" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:memory"
+
+    @property
+    def native_value(self):
+        return self.stats_data.get("mb")
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfInformation.GIBIBYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
+
+
+class BeszelTotalServicesSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_total_services"
+
+    @property
+    def name(self):
+        return f"{self.system.name} Total Services" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:check-circle"
+
+    @property
+    def native_value(self):
+        services = self.system_info.get("sv")
+        return services[0] if isinstance(services, list) and len(services) >= 1 else None
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+
+class BeszelFailedServicesSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_failed_services"
+
+    @property
+    def name(self):
+        return f"{self.system.name} Failed Services" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:alert-circle"
+
+    @property
+    def native_value(self):
+        services = self.system_info.get("sv")
+        return services[1] if isinstance(services, list) and len(services) >= 2 else None
 
     @property
     def state_class(self):
