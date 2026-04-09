@@ -10,10 +10,7 @@ In addition to the original sensors, it exposes:
 - Additional disk usage / used / total sensors for extra disks reported by Beszel, such as `SDA`, `SDA Used`, and `SDA Total`
 - Per-interface bandwidth RX / TX rate
 - Per-interface RX/TX byte counters
-- Swap total / used when the system reports swap
-- GPU usage when reported by Beszel
-- Battery when reported by Beszel
-- Beszel Hub update status
+- Swap info when the system reports swap
 - S.M.A.R.T. disk health entities and attributes
 - S.M.A.R.T. temperature / power-on-hours sensors
 - Load average sensors
