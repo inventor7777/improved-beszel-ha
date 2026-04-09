@@ -4,13 +4,25 @@ Improved Beszel API is a Home Assistant custom integration for [Beszel](https://
 
 This project is a maintained fork of the original [`Ronjar/beszel-ha`](https://github.com/Ronjar/beszel-ha). The original integration great but this fork exists to keep development moving, merge fixes faster, and expose more of the useful data already available in the Beszel backend.
 
+## Installation
+You can simply click here to install:
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=inventor7777&repository=improved-beszel-ha&category=integration)
+
+Or do it manually:
+
+1. Open HACS.
+2. Open the menu in the top right and select `Custom repositories`.
+3. Add `https://github.com/inventor7777/improved-beszel-ha`.
+4. Select category `Integration`.
+5. Restart Home Assistant if needed.
+6. Install `Improved Beszel API` from HACS.
+7. Add the integration from the Home Assistant integrations page.
+
 ## Disclaimer
 
-- This is a fork, not the original upstream integration. Credit goes fully to @Ronjar for creation and initial development.
+- This is a fork, not the original upstream integration. Credit goes fully to @ronjar for creation and initial development.
 - All development after the original fork was dome by GPT 5.4 Codex under close supervision and testing.
-- It is intended to work with normal Beszel / Beszel Hub.
-- The Home Assistant integration name is `Improved Beszel API`.
-- The custom component domain/install path is `improved_beszel_api`.
 
 ## What It Does
 
@@ -48,17 +60,6 @@ Some noisier or less universally useful entities are disabled by default, such a
 - Per-interface bandwidth and byte-counter sensors
 - S.M.A.R.T. diagnostic sensors when a system has more disks
 
-## Installation
-
-Because this repository is not part of the default HACS lists, add it as a custom repository first.
-
-1. Open HACS.
-2. Open the menu in the top right and select `Custom repositories`.
-3. Add `https://github.com/inventor7777/improved-beszel-ha`.
-4. Select category `Integration`.
-5. Restart Home Assistant if needed.
-6. Install `Improved Beszel API` from HACS.
-7. Add the integration from the Home Assistant integrations page.
 
 ## Setup
 
@@ -70,13 +71,10 @@ When adding the integration, use:
 - `Verify SSL`: Whether to verify the Beszel SSL certificate
 - `Check for updates`: Enables the Beszel Hub update entity
 
-Improved Beszel API polls Beszel every 2 minutes by default.
-
 ## Notes
 
 - Right now the integration adds all systems visible to the configured Beszel user.
 - If you want to limit which systems show up in Home Assistant, the easiest approach is to create a Beszel user that only has access to the systems you want exposed.
-- Beszel Hub branding and product references remain Beszel/Beszel Hub; `Improved Beszel API` is the name of this integration project.
 
 ## Entity Naming
 
