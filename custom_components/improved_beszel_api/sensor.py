@@ -163,9 +163,7 @@ class BeszelSmartBaseSensor(BeszelBaseSensor):
     @property
     def smart_device_label(self):
         label = self._disk_name or "disk"
-        if label.lower().startswith("nvme"):
-            return f"NVMe{label[4:]}"
-        return label.upper()
+        return label.lower()
 
 class BeszelCPUSensor(BeszelBaseSensor):
     @property
@@ -531,7 +529,11 @@ class BeszelNamedTemperatureSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        return f"{self.system.name} {self._temperature_name} Temperature" if self.system else None
+        return (
+            f"{self.system.name} {self._temperature_name.lower()} Temperature"
+            if self.system
+            else None
+        )
 
     @property
     def icon(self):
@@ -644,7 +646,7 @@ class BeszelDiskUsedSensor(BeszelBaseSensor):
         if not self.system:
             return None
         if self._disk_name:
-            return f"{self.system.name} {self._disk_name.upper()} Used"
+            return f"{self.system.name} {self._disk_name.lower()} Used"
         return f"{self.system.name} Disk Used"
 
     @property
@@ -753,7 +755,11 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
     @property
     def name(self):
         label = "RX" if self._direction == "rx" else "TX"
-        return f"{self.system.name} {self._interface_name} {label}" if self.system else None
+        return (
+            f"{self.system.name} {self._interface_name.lower()} {label}"
+            if self.system
+            else None
+        )
 
     @property
     def icon(self):
@@ -797,7 +803,11 @@ class BeszelInterfaceBandwidthSensor(BeszelBaseSensor):
     @property
     def name(self):
         label = "Bandwidth RX" if self._direction == "rx" else "Bandwidth TX"
-        return f"{self.system.name} {self._interface_name} {label}" if self.system else None
+        return (
+            f"{self.system.name} {self._interface_name.lower()} {label}"
+            if self.system
+            else None
+        )
 
     @property
     def icon(self):
@@ -881,7 +891,7 @@ class BeszelEFSDiskSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        return f"{self.system.name} {self._disk_name.upper()}" if self.system else None
+        return f"{self.system.name} {self._disk_name.lower()}" if self.system else None
 
     @property
     def icon(self):
@@ -1015,7 +1025,7 @@ class BeszelDiskTotalSensor(BeszelBaseSensor):
         if not self.system:
             return None
         if self._disk_name:
-            return f"{self.system.name} {self._disk_name.upper()} Total"
+            return f"{self.system.name} {self._disk_name.lower()} Total"
         return f"{self.system.name} Disk Total"
 
     @property
