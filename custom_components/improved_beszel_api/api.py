@@ -2,6 +2,7 @@ import logging
 
 import httpx
 from pocketbase import PocketBase
+import requests
 
 LOGGER = logging.getLogger(__name__)
 
@@ -76,8 +77,9 @@ class BeszelApiClient:
 
 class BeszelUpdateApi:
 
-    def __init__(self, url: str, timeout: int = 10):
+    def __init__(self, url: str, verify_ssl: bool = True, timeout: int = 10):
         self.base_url = url.rstrip("/") if url else url
+        self.verify_ssl = verify_ssl
         self.timeout = timeout
 
     def _remove_version_prefix(self, v: str | None) -> str | None:
@@ -101,7 +103,6 @@ class BeszelUpdateApi:
 
     def get_hub_version(self) -> str | None:
         """Fetch the base URL and extract HUB_VERSION from HTML."""
-        import requests
         import re
 
         if not self.base_url:
@@ -110,7 +111,7 @@ class BeszelUpdateApi:
 
         url = self.base_url if self.base_url.startswith(("http://", "https://")) else f"http://{self.base_url}"
         try:
-            r = requests.get(url, timeout=self.timeout)
+            r = requests.get(url, timeout=self.timeout, verify=self.verify_ssl)
             r.raise_for_status()
             match = re.search(r'HUB_VERSION\s*:\s*"([^"]+)"', r.text)
             if match:
@@ -124,11 +125,10 @@ class BeszelUpdateApi:
 
     def get_latest_release(self) -> tuple[str | None, str | None]:
         """Query GitHub releases API and return (tag_name, html_url)."""
-        import requests
         api_url = "https://api.github.com/repos/henrygd/beszel/releases/latest"
         headers = {"Accept": "application/vnd.github.v3+json"}
         try:
-            r = requests.get(api_url, headers=headers, timeout=self.timeout)
+            r = requests.get(api_url, headers=headers, timeout=self.timeout, verify=self.verify_ssl)
             r.raise_for_status()
             j = r.json()
             tag = j.get("tag_name")

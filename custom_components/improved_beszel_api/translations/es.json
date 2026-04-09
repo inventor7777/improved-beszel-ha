@@ -1,5 +1,13 @@
 {
   "config": {
+    "error": {
+      "cannot_connect": "No se pudo conectar con Beszel Hub",
+      "invalid_auth": "Usuario o contraseña no válidos",
+      "unknown": "Error inesperado"
+    },
+    "abort": {
+      "already_configured": "Este Beszel Hub ya está configurado"
+    },
     "step": {
       "user": {
         "title": "Añadir configuración de Improved Beszel API",
@@ -18,6 +26,11 @@
     }
   },
   "options": {
+    "error": {
+      "cannot_connect": "No se pudo conectar con Beszel Hub",
+      "invalid_auth": "Usuario o contraseña no válidos",
+      "unknown": "Error inesperado"
+    },
     "step": {
       "init": {
         "title": "Actualizar configuración de Improved Beszel API",

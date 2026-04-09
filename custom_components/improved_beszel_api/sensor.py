@@ -16,7 +16,7 @@ from homeassistant.helpers.icon import icon_for_battery_level
 
 from .const import DOMAIN, LOGGER
 
-INTERFACE_SENSOR_ENABLE_THRESHOLD = 4
+NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD = 4
 
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
@@ -59,6 +59,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 if system_stats and 'efs' in system_stats and isinstance(system_stats['efs'], dict):
                     for disk_name in system_stats['efs'].keys():
                         entities.append(BeszelEFSDiskSensor(coordinator, system, disk_name))
+                        entities.append(BeszelDiskUsedSensor(coordinator, system, disk_name))
                         entities.append(BeszelDiskTotalSensor(coordinator, system, disk_name))
                         LOGGER.info(f"Created EFS sensors for {system.name} - {disk_name}")
 
@@ -135,8 +136,6 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
             "sw_version": info.get("v"),
             "hw_version": info.get("k"),
         }
-
-
 class BeszelSmartBaseSensor(BeszelBaseSensor):
     def __init__(self, coordinator, system, device_data):
         super().__init__(coordinator, system)
@@ -305,7 +304,7 @@ class BeszelNetworkReceiveSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        return f"{self.system.name} Network Receive" if self.system else None
+        return f"{self.system.name} Bandwidth RX" if self.system else None
 
     @property
     def icon(self):
@@ -314,11 +313,11 @@ class BeszelNetworkReceiveSensor(BeszelBaseSensor):
     @property
     def native_value(self):
         bandwidth = self.stats_data.get("b")
-        return bandwidth[1] / 1_000 if bandwidth and len(bandwidth) > 1 else None
+        return bandwidth[1] / 1_000_000 if bandwidth and len(bandwidth) > 1 else None
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfDataRate.KILOBYTES_PER_SECOND
+        return UnitOfDataRate.MEGABYTES_PER_SECOND
 
     @property
     def device_class(self):
@@ -339,7 +338,7 @@ class BeszelNetworkSendSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        return f"{self.system.name} Network Send" if self.system else None
+        return f"{self.system.name} Bandwidth TX" if self.system else None
 
     @property
     def icon(self):
@@ -348,11 +347,11 @@ class BeszelNetworkSendSensor(BeszelBaseSensor):
     @property
     def native_value(self):
         bandwidth = self.stats_data.get("b")
-        return bandwidth[0] / 1_000 if bandwidth and len(bandwidth) > 0 else None
+        return bandwidth[0] / 1_000_000 if bandwidth and len(bandwidth) > 0 else None
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfDataRate.KILOBYTES_PER_SECOND
+        return UnitOfDataRate.MEGABYTES_PER_SECOND
 
     @property
     def device_class(self):
@@ -405,6 +404,10 @@ class BeszelSmartTemperatureSensor(BeszelSmartBaseSensor):
             if self.system
             else None
         )
+
+    @property
+    def icon(self):
+        return "mdi:thermometer-lines"
 
     @property
     def native_value(self):
@@ -521,6 +524,10 @@ class BeszelNamedTemperatureSensor(BeszelBaseSensor):
         return f"{self.system.name} {self._temperature_name} Temperature" if self.system else None
 
     @property
+    def icon(self):
+        return "mdi:thermometer-plus"
+
+    @property
     def native_value(self):
         temperatures = self.stats_data.get("t", {})
         return temperatures.get(self._temperature_name)
@@ -539,8 +546,8 @@ class BeszelNamedTemperatureSensor(BeszelBaseSensor):
 
     @property
     def entity_registry_enabled_default(self) -> bool:
-        interface_count = len(self.stats_data.get("ni", {}))
-        return interface_count <= INTERFACE_SENSOR_ENABLE_THRESHOLD
+        temperature_count = len(self.stats_data.get("t", {}))
+        return temperature_count <= NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD
 
 
 class BeszelLoadAverageSensor(BeszelBaseSensor):
@@ -588,11 +595,11 @@ class BeszelMemoryUsedSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        return f"{self.system.name} Memory Used" if self.system else None
+        return f"{self.system.name} RAM Used" if self.system else None
 
     @property
     def icon(self):
-        return "mdi:memory"
+        return "mdi:chip"
 
     @property
     def native_value(self):
@@ -612,20 +619,37 @@ class BeszelMemoryUsedSensor(BeszelBaseSensor):
 
 
 class BeszelDiskUsedSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, disk_name=None):
+        super().__init__(coordinator, system)
+        self._disk_name = disk_name
+
     @property
     def unique_id(self):
+        if self._disk_name:
+            return f"beszel_{self._system_id}_{self._disk_name}_used"
         return f"beszel_{self._system_id}_disk_used"
 
     @property
     def name(self):
-        return f"{self.system.name} Disk Used" if self.system else None
+        if not self.system:
+            return None
+        if self._disk_name:
+            return f"{self.system.name} {self._disk_name.upper()} Used"
+        return f"{self.system.name} Disk Used"
 
     @property
     def icon(self):
+        if self._disk_name:
+            return "mdi:harddisk-plus"
         return "mdi:harddisk"
 
     @property
     def native_value(self):
+        if self._disk_name:
+            disk_data = self.stats_data.get("efs", {}).get(self._disk_name, {})
+            if isinstance(disk_data, dict):
+                return disk_data.get("du")
+            return None
         return self.stats_data.get("du")
 
     @property
@@ -686,7 +710,12 @@ class BeszelSwapUsedSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.stats_data.get("su")
+        swap_used = self.stats_data.get("su")
+        if swap_used is not None:
+            return swap_used
+        if self.stats_data.get("s") is not None:
+            return 0
+        return None
 
     @property
     def native_unit_of_measurement(self):
@@ -790,15 +819,15 @@ class BeszelEFSDiskSensor(BeszelBaseSensor):
 
     @property
     def unique_id(self):
-        return f"beszel_{self._system_id}_efs_{self._disk_name}"
+        return f"beszel_{self._system_id}_{self._disk_name}"
 
     @property
     def name(self):
-        return f"{self.system.name} EFS {self._disk_name}" if self.system else None
+        return f"{self.system.name} {self._disk_name.upper()}" if self.system else None
 
     @property
     def icon(self):
-        return "mdi:harddisk"
+        return "mdi:harddisk-plus"
 
     @property
     def native_value(self):
@@ -812,7 +841,7 @@ class BeszelEFSDiskSensor(BeszelBaseSensor):
         used_space = disk_data.get('du')
 
         # Calculate disk usage percentage
-        if total_space and used_space and total_space > 0:
+        if total_space is not None and used_space is not None and total_space > 0:
             return round((used_space / total_space) * 100, 2)
         return None
 
@@ -919,16 +948,22 @@ class BeszelDiskTotalSensor(BeszelBaseSensor):
 
     @property
     def unique_id(self):
-        suffix = f"_{self._disk_name}" if self._disk_name else ""
-        return f"beszel_{self._system_id}_disk_total{suffix}"
+        if self._disk_name:
+            return f"beszel_{self._system_id}_{self._disk_name}_total"
+        return f"beszel_{self._system_id}_disk_total"
 
     @property
     def name(self):
-        label = f" {self._disk_name}" if self._disk_name else ""
-        return f"{self.system.name} Disk Total{label}" if self.system else None
+        if not self.system:
+            return None
+        if self._disk_name:
+            return f"{self.system.name} {self._disk_name.upper()} Total"
+        return f"{self.system.name} Disk Total"
 
     @property
     def icon(self):
+        if self._disk_name:
+            return "mdi:harddisk-plus"
         return "mdi:harddisk"
 
     @property

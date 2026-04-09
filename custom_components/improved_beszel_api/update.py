@@ -28,15 +28,18 @@ class BeszelHubUpdate(CoordinatorEntity, UpdateEntity):
 
     @property
     def installed_version(self):
-        return self.coordinator.data.get("hub_version")
+        data = self.coordinator.data or {}
+        return data.get("hub_version")
 
     @property
     def latest_version(self):
-        return self.coordinator.data.get("latest_version")
+        data = self.coordinator.data or {}
+        return data.get("latest_version")
 
     @property
     def release_url(self):
-        return self.coordinator.data.get("latest_release_url")
+        data = self.coordinator.data or {}
+        return data.get("latest_release_url")
 
     @property
     def in_progress(self) -> bool:
@@ -48,7 +51,7 @@ class BeszelHubUpdate(CoordinatorEntity, UpdateEntity):
 
     @property
     def device_info(self):
-        hub = self.coordinator.data
+        hub = self.coordinator.data or {}
         return {
             "identifiers": {(DOMAIN, self._entry_id)},
             "name": "Beszel Hub",

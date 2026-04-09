@@ -1,5 +1,13 @@
 {
   "config": {
+    "error": {
+      "cannot_connect": "Failed to connect to Beszel Hub",
+      "invalid_auth": "Invalid username or password",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This Beszel Hub is already configured"
+    },
     "step": {
       "user": {
         "title": "Add Improved Beszel API configuration",
@@ -18,6 +26,11 @@
     }
   },
   "options": {
+    "error": {
+      "cannot_connect": "Failed to connect to Beszel Hub",
+      "invalid_auth": "Invalid username or password",
+      "unknown": "Unexpected error"
+    },
     "step": {
       "init": {
           "title": "Update Improved Beszel API configuration",

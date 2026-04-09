@@ -84,7 +84,7 @@ async def async_setup_entry(hass, entry):
     coordinator_hub = None
     
     if update_check_enabled:
-        update_api = BeszelUpdateApi(url)
+        update_api = BeszelUpdateApi(url, verify_ssl=verify_ssl)
         async def async_update_hub():
             try:
                 return await hass.async_add_executor_job(update_api.get_update_info)
@@ -103,7 +103,13 @@ async def async_setup_entry(hass, entry):
     try:
         await coordinator.async_config_entry_first_refresh()
         if coordinator_hub is not None:
-            await coordinator_hub.async_config_entry_first_refresh()
+            try:
+                await coordinator_hub.async_config_entry_first_refresh()
+            except Exception as err:
+                LOGGER.warning(
+                    "Unable to fetch Beszel Hub update information during setup: %s",
+                    err,
+                )
     except Exception as e:
         LOGGER.error(f"Failed to initialize coordinator: {e}")
         raise
