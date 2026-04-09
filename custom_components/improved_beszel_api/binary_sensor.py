@@ -1,3 +1,5 @@
+import re
+
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -6,16 +8,37 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, LOGGER
 
+SMART_ATTRIBUTE_RENAMES = {
+    "criticalwarning": "critical_warning",
+    "availablespare": "available_spare",
+    "availablesparethreshold": "available_spare_threshold",
+    "percentageused": "percentage_used",
+    "dataunitsread": "data_units_read",
+    "dataunitswritten": "data_units_written",
+    "hostreads": "host_reads",
+    "hostwrites": "host_writes",
+    "controllerbusytime": "controller_busy_time",
+    "powercycles": "power_cycles",
+    "poweronhours": "power_on_hours",
+    "unsafeshutdowns": "unsafe_shutdowns",
+    "mediaerrors": "media_errors",
+    "numerrlogentries": "num_err_log_entries",
+    "warningtemptime": "warning_temp_time",
+    "criticalcomptime": "critical_comp_time",
+}
+
 
 def _normalize_smart_attribute_name(name: str) -> str:
-    return (
-        name.strip()
-        .lower()
+    normalized = re.sub(r"(?<!^)(?=[A-Z])", "_", name.strip())
+    normalized = (
+        normalized.lower()
         .replace(" ", "_")
         .replace(".", "")
         .replace("-", "_")
         .replace("/", "_")
     )
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return SMART_ATTRIBUTE_RENAMES.get(normalized, normalized)
 
 
 def _format_smart_device_label(disk_name: str) -> str:
@@ -154,12 +177,12 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
 
         temp = device_data.get("temp")
         if temp is not None:
-            attributes["temperature °C"] = temp
+            attributes["temperature_c"] = temp
 
         capacity = device_data.get("capacity", 0)
         if capacity:
-            attributes["capacity GiB"] = round(capacity / (1024**3), 2)
-            attributes["capacity TiB"] = round(capacity / (1024**4), 2)
+            attributes["capacity_gib"] = round(capacity / (1024**3), 2)
+            attributes["capacity_tib"] = round(capacity / (1024**4), 2)
 
         hours = device_data.get("hours")
         if hours is not None:
@@ -176,9 +199,6 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
                 attributes[key] = value
 
         raw_attributes = device_data.get("attributes") or []
-        if raw_attributes:
-            attributes["smart_attributes"] = raw_attributes
-
         for attribute in raw_attributes:
             name = attribute.get("n")
             if not name:
