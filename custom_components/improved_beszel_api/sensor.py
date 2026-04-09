@@ -600,7 +600,7 @@ class BeszelMemoryUsedSensor(BeszelBaseSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return UnitOfInformation.GIGABYTES
+        return UnitOfInformation.GIBIBYTES
 
     @property
     def device_class(self):
