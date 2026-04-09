@@ -41,7 +41,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entities.append(BeszelNetworkSendSensor(coordinator, system))
                 entities.append(BeszelTemperatureSensor(coordinator, system))
                 entities.append(BeszelUptimeSensor(coordinator, system))
-                entities.append(BeszelGPUSensor(coordinator, system))
                 entities.append(BeszelMemoryUsedSensor(coordinator, system))
                 entities.append(BeszelMemoryCacheUsedSensor(coordinator, system))
                 entities.append(BeszelDiskUsedSensor(coordinator, system))
@@ -52,6 +51,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 # Get stats for this system
                 system_stats = stats_data.get(system.id, {})
                 system_info = getattr(system, "info", {})
+
+                if system_info.get("g") is not None:
+                    entities.append(BeszelGPUSensor(coordinator, system))
 
                 if isinstance(system_info.get("sv"), list) and len(system_info["sv"]) >= 2:
                     entities.append(BeszelTotalServicesSensor(coordinator, system))
@@ -216,7 +218,7 @@ class BeszelGPUSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self.system_info.get("g", 0.0) if self.system else None
+        return self.system_info.get("g") if self.system else None
 
     @property
     def native_unit_of_measurement(self):
