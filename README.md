@@ -2,7 +2,26 @@
 
 Improved Beszel API is a Home Assistant custom integration for [Beszel](https://www.beszel.dev/).
 
-This project is a maintained fork of the original [`Ronjar/beszel-ha`](https://github.com/Ronjar/beszel-ha). The original integration great but this fork exists to keep development moving, merge fixes faster, and expose more of the useful data already available in the Beszel backend.
+This project is a maintained fork of the original [`Ronjar/beszel-ha`](https://github.com/Ronjar/beszel-ha). The original integration great but this fork exists to keep development moving, merge fixes faster, and expose more of the useful data already available in the Beszel backend. 
+
+## What has changed vs the original?
+In addition to the original sensors, it exposes:
+
+- Additional disk usage / used / total sensors for extra disks reported by Beszel, such as `SDA`, `SDA Used`, and `SDA Total`
+- Per-interface bandwidth RX / TX rate
+- Per-interface RX/TX byte counters
+- Swap total / used when the system reports swap
+- GPU usage when reported by Beszel
+- Battery when reported by Beszel
+- Beszel Hub update status
+- S.M.A.R.T. disk health entities and attributes
+- S.M.A.R.T. temperature / power-on-hours sensors
+- Load average sensors
+- Named temperature sensors
+- Per-interface bandwidth and byte-counter sensors
+- and more. 
+
+It also adds **adjustable polling interval**, proper **state/device classes** so that HA unit changes work seamlessly, saner unit defaults, *and better icons :)*
 
 ## Installation
 You can simply click here to install:
@@ -38,6 +57,9 @@ It currently exposes:
 - Disk usage percent
 - Disk total
 - Disk used
+- Swap usage percent
+- Swap total
+- Swap used
 - Additional disk usage / used / total sensors for extra disks reported by Beszel, such as `SDA`, `SDA Used`, and `SDA Total`
 - Uptime
 - Main system temperature
@@ -46,7 +68,6 @@ It currently exposes:
 - Bandwidth RX / TX rate
 - Per-interface bandwidth RX / TX rate
 - Per-interface RX/TX byte counters
-- Swap total / used when the system reports swap
 - GPU usage when reported by Beszel
 - Battery when reported by Beszel
 - Beszel Hub update status
