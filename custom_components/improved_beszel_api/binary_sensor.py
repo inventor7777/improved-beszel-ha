@@ -154,12 +154,12 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
 
         temp = device_data.get("temp")
         if temp is not None:
-            attributes["temperature_c"] = temp
+            attributes["temperature °C"] = temp
 
         capacity = device_data.get("capacity", 0)
         if capacity:
-            attributes["capacity_gib"] = round(capacity / (1024**3), 2)
-            attributes["capacity_tib"] = round(capacity / (1024**4), 2)
+            attributes["capacity GiB"] = round(capacity / (1024**3), 2)
+            attributes["capacity TiB"] = round(capacity / (1024**4), 2)
 
         hours = device_data.get("hours")
         if hours is not None:
