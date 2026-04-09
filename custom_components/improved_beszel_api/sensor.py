@@ -1087,6 +1087,11 @@ class BeszelEFSDiskSensor(BeszelBaseSensor):
 
 class BeszelBatterySensor(BeszelBaseSensor):
     @property
+    def battery_data(self):
+        battery = self.stats_data.get("bat")
+        return battery if isinstance(battery, list) and len(battery) >= 2 else None
+
+    @property
     def unique_id(self):
         return f"beszel_{self._system_id}_battery"
 
@@ -1096,9 +1101,10 @@ class BeszelBatterySensor(BeszelBaseSensor):
 
     @property
     def icon(self):
-        if not self.stats_data and "bat" not in self.stats_data:
+        battery = self.battery_data
+        if battery is None:
             return "mdi:battery-unknown"
-        level, state = self.stats_data.get("bat")
+        level, state = battery
         # https://github.com/henrygd/beszel/blob/4d05bfdff0ec90b68e820ad5dc32a5c4bccf8f0f/internal/site/src/lib/enums.ts#L41-L48
         charging = state == 3
 
@@ -1114,9 +1120,10 @@ class BeszelBatterySensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        if not self.stats_data:
+        battery = self.battery_data
+        if battery is None:
             return None
-        return self.stats_data.get("bat")[0]
+        return battery[0]
 
     @property
     def native_unit_of_measurement(self):

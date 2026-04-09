@@ -128,7 +128,7 @@ class BeszelUpdateApi:
         api_url = "https://api.github.com/repos/henrygd/beszel/releases/latest"
         headers = {"Accept": "application/vnd.github.v3+json"}
         try:
-            r = requests.get(api_url, headers=headers, timeout=self.timeout, verify=self.verify_ssl)
+            r = requests.get(api_url, headers=headers, timeout=self.timeout)
             r.raise_for_status()
             j = r.json()
             tag = j.get("tag_name")

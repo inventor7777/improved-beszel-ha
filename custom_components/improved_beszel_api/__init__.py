@@ -60,6 +60,7 @@ async def async_setup_entry(hass, entry):
                             "type": getattr(device, "type", ""),
                             "serial": getattr(device, "serial", ""),
                             "firmware": getattr(device, "firmware", ""),
+                            "attributes": getattr(device, "attributes", []),
                         }
                     )
                 LOGGER.debug("Loaded S.M.A.R.T. data for %s devices", len(all_smart))
