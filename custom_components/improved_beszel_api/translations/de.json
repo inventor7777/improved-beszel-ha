@@ -17,10 +17,12 @@
           "username": "Benutzername (optional)",
           "password": "Passwort (optional)",
           "update_check": "Nach Updates suchen",
-            "verify_ssl": "Beszel SSL Zertifikat überprüfen"
+            "verify_ssl": "Beszel SSL Zertifikat überprüfen",
+            "scan_interval": "Aktualisierungsintervall (Sekunden)"
         },
         "data_description": {
-          "update_check": "Verbindet sich periodisch mit github.com, um nach neuen Releases zu suchen"
+          "update_check": "Verbindet sich periodisch mit github.com, um nach neuen Releases zu suchen",
+          "scan_interval": "Wie oft Beszel-Daten aktualisiert werden. Zulässiger Bereich: 10 bis 3600 Sekunden"
         }
       }
     }
@@ -40,10 +42,12 @@
           "username": "Benutzername (optional)",
           "password": "Passwort (optional)",
           "update_check": "Nach Updates suchen",
-          "verify_ssl": "Beszel SSL Zertifikat überprüfen"
+          "verify_ssl": "Beszel SSL Zertifikat überprüfen",
+          "scan_interval": "Aktualisierungsintervall (Sekunden)"
         },
         "data_description": {
-          "update_check": "Verbindet sich periodisch mit github.com, um nach neuen Releases zu suchen"
+          "update_check": "Verbindet sich periodisch mit github.com, um nach neuen Releases zu suchen",
+          "scan_interval": "Wie oft Beszel-Daten aktualisiert werden. Zulässiger Bereich: 10 bis 3600 Sekunden"
         }
       }
     }

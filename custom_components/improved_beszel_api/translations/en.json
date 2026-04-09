@@ -17,10 +17,12 @@
           "username": "Username (optional)",
           "password": "Password (optional)",
           "update_check": "Check for updates",
-          "verify_ssl": "Verify Beszel SSL certificate"
+          "verify_ssl": "Verify Beszel SSL certificate",
+          "scan_interval": "Polling interval (seconds)"
         },
         "data_description": {
-          "update_check": "Connects periodically to github.com to check for new releases"
+          "update_check": "Connects periodically to github.com to check for new releases",
+          "scan_interval": "How often Beszel data is refreshed. Allowed range: 10 to 3600 seconds"
         }
       }
     }
@@ -34,16 +36,18 @@
     "step": {
       "init": {
           "title": "Update Improved Beszel API configuration",
-          "description": "Change your Improved Beszel API connection details",
+          "description": "Update your Beszel Hub login details and polling settings",
           "data": {
             "url": "URL",
             "username": "Username (optional)",
             "password": "Password (optional)",
             "update_check": "Check for updates",
-            "verify_ssl": "Verify Beszel SSL certificate"
+            "verify_ssl": "Verify Beszel SSL certificate",
+            "scan_interval": "Polling interval (seconds)"
           },
           "data_description": {
-            "update_check": "Connects periodically to github.com to check for new releases"
+            "update_check": "Connects periodically to github.com to check for new releases",
+            "scan_interval": "How often Beszel data is refreshed. Allowed range: 10 to 3600 seconds"
           }
         }
     }

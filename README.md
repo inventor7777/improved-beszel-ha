@@ -70,6 +70,7 @@ When adding the integration, use:
 - `Password`: Your Beszel password
 - `Verify SSL`: Whether to verify the Beszel SSL certificate
 - `Check for updates`: Enables the Beszel Hub update entity
+- `Polling interval (seconds)`: How often Beszel data is refreshed, adjustable from 10 to 3600 seconds
 
 ## Notes
 

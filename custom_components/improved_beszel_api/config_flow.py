@@ -5,7 +5,7 @@ from homeassistant.exceptions import HomeAssistantError
 from pocketbase.client import ClientResponseError
 
 from .api import BeszelApiClient
-from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_VERIFY_SSL, CONF_UPDATE_CHECK
+from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_VERIFY_SSL, CONF_UPDATE_CHECK, CONF_SCAN_INTERVAL, UPDATE_INTERVAL
 
 
 def _normalize_url(url: str) -> str:
@@ -60,13 +60,7 @@ class BeszelConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_URL): str,
-                vol.Optional(CONF_USERNAME): str,
-                vol.Optional(CONF_PASSWORD): str,
-                vol.Optional(CONF_VERIFY_SSL, default=True): bool,
-                vol.Optional(CONF_UPDATE_CHECK, default=False): bool,
-            }),
+            data_schema=self._build_schema({}),
             errors=errors,
         )
 
@@ -74,6 +68,34 @@ class BeszelConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         return BeszelOptionsFlow(config_entry)
+
+    def _build_schema(self, data):
+        return vol.Schema({
+            vol.Required(
+                CONF_URL,
+                default=data.get(CONF_URL, "")
+            ): str,
+            vol.Optional(
+                CONF_USERNAME,
+                default=data.get(CONF_USERNAME, "")
+            ): str,
+            vol.Optional(
+                CONF_PASSWORD,
+                default=data.get(CONF_PASSWORD, "")
+            ): str,
+            vol.Optional(
+                CONF_VERIFY_SSL,
+                default=data.get(CONF_VERIFY_SSL, True)
+            ): bool,
+            vol.Optional(
+                CONF_UPDATE_CHECK,
+                default=data.get(CONF_UPDATE_CHECK, False)
+            ): bool,
+            vol.Optional(
+                CONF_SCAN_INTERVAL,
+                default=data.get(CONF_SCAN_INTERVAL, UPDATE_INTERVAL)
+            ): vol.All(vol.Coerce(int), vol.Range(min=10, max=3600)),
+        })
 
 
 class BeszelOptionsFlow(config_entries.OptionsFlow):
@@ -142,6 +164,10 @@ class BeszelOptionsFlow(config_entries.OptionsFlow):
                 CONF_VERIFY_SSL,
                 default=data.get(CONF_VERIFY_SSL, True)
             ): bool,
+            vol.Optional(
+                CONF_SCAN_INTERVAL,
+                default=data.get(CONF_SCAN_INTERVAL, UPDATE_INTERVAL)
+            ): vol.All(vol.Coerce(int), vol.Range(min=10, max=3600)),
         })
 
 

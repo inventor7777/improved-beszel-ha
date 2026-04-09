@@ -6,5 +6,6 @@ CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_VERIFY_SSL = "verify_ssl"
 CONF_UPDATE_CHECK = "update_check"
+CONF_SCAN_INTERVAL = "scan_interval"
 UPDATE_INTERVAL = 120
 LOGGER = logging.getLogger(__package__)
