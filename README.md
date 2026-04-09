@@ -40,7 +40,7 @@ Or do it manually:
 ## Disclaimer
 
 - This is a fork, not the original upstream integration. Credit goes fully to @ronjar for creation and initial development.
-- All development after the original fork was dome by GPT 5.4 Codex under close supervision and testing.
+- All development after the original fork was done by GPT 5.4 Codex under close supervision and testing.
 
 ## What It Does
 
@@ -93,7 +93,7 @@ When adding the integration, use:
 - `Password`: Your Beszel password
 - `Verify SSL`: Whether to verify the Beszel SSL certificate
 - `Check for updates`: Enables the Beszel Hub update entity 
-- `Polling interval (seconds)`: How often Beszel data is refreshed, adjustable from 10 to 3600 seconds
+- `Polling interval (seconds)`: How often Beszel data is refreshed, adjustable from 10 to 3600 seconds *(default: 120 seconds)*
 
 ## Notes
 
