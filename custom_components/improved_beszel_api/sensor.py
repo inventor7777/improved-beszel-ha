@@ -696,6 +696,10 @@ class BeszelTotalServicesSensor(BeszelBaseSensor):
     def state_class(self):
         return SensorStateClass.MEASUREMENT
 
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
+
 
 class BeszelFailedServicesSensor(BeszelBaseSensor):
     @property
@@ -718,6 +722,10 @@ class BeszelFailedServicesSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
 
 
 class BeszelDiskUsedSensor(BeszelBaseSensor):
