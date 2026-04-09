@@ -403,7 +403,7 @@ class BeszelTemperatureSensor(BeszelBaseSensor):
 class BeszelSmartTemperatureSensor(BeszelSmartBaseSensor):
     @property
     def unique_id(self):
-        return f"beszel_{self._system_id}_{self._disk_name}_smart_temperature"
+        return f"beszel_{self._system_id}_{self._disk_name}_smart_temperature_v2"
 
     @property
     def name(self):
@@ -441,7 +441,7 @@ class BeszelSmartTemperatureSensor(BeszelSmartBaseSensor):
 class BeszelSmartPowerOnHoursSensor(BeszelSmartBaseSensor):
     @property
     def unique_id(self):
-        return f"beszel_{self._system_id}_{self._disk_name}_smart_power_on_hours"
+        return f"beszel_{self._system_id}_{self._disk_name}_smart_power_on_hours_v2"
 
     @property
     def name(self):
@@ -482,7 +482,7 @@ class BeszelSmartPowerOnHoursSensor(BeszelSmartBaseSensor):
 class BeszelSmartPowerOnDaysSensor(BeszelSmartBaseSensor):
     @property
     def unique_id(self):
-        return f"beszel_{self._system_id}_{self._disk_name}_smart_power_on_days"
+        return f"beszel_{self._system_id}_{self._disk_name}_smart_power_on_days_v2"
 
     @property
     def name(self):
@@ -525,7 +525,7 @@ class BeszelNamedTemperatureSensor(BeszelBaseSensor):
 
     @property
     def unique_id(self):
-        return f"beszel_{self._system_id}_temperature_{self._temperature_name}"
+        return f"beszel_{self._system_id}_temperature_{self._temperature_name}_v2"
 
     @property
     def name(self):
@@ -638,7 +638,7 @@ class BeszelDiskUsedSensor(BeszelBaseSensor):
     @property
     def unique_id(self):
         if self._disk_name:
-            return f"beszel_{self._system_id}_{self._disk_name}_used"
+            return f"beszel_{self._system_id}_{self._disk_name}_used_v2"
         return f"beszel_{self._system_id}_disk_used"
 
     @property
@@ -750,7 +750,7 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
 
     @property
     def unique_id(self):
-        return f"beszel_{self._system_id}_{self._interface_name}_{self._direction}_bytes"
+        return f"beszel_{self._system_id}_{self._interface_name}_{self._direction}_bytes_v2"
 
     @property
     def name(self):
@@ -798,7 +798,7 @@ class BeszelInterfaceBandwidthSensor(BeszelBaseSensor):
 
     @property
     def unique_id(self):
-        return f"beszel_{self._system_id}_{self._interface_name}_{self._direction}_bandwidth"
+        return f"beszel_{self._system_id}_{self._interface_name}_{self._direction}_bandwidth_v2"
 
     @property
     def name(self):
@@ -887,7 +887,7 @@ class BeszelEFSDiskSensor(BeszelBaseSensor):
 
     @property
     def unique_id(self):
-        return f"beszel_{self._system_id}_{self._disk_name}"
+        return f"beszel_{self._system_id}_{self._disk_name}_v2"
 
     @property
     def name(self):
@@ -1017,7 +1017,7 @@ class BeszelDiskTotalSensor(BeszelBaseSensor):
     @property
     def unique_id(self):
         if self._disk_name:
-            return f"beszel_{self._system_id}_{self._disk_name}_total"
+            return f"beszel_{self._system_id}_{self._disk_name}_total_v2"
         return f"beszel_{self._system_id}_disk_total"
 
     @property

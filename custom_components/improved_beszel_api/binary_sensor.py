@@ -20,9 +20,7 @@ def _normalize_smart_attribute_name(name: str) -> str:
 
 def _format_smart_device_label(disk_name: str) -> str:
     label = disk_name or "disk"
-    if label.lower().startswith("nvme"):
-        return f"NVMe{label[4:]}"
-    return label.upper()
+    return label.lower()
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -112,7 +110,7 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
 
     @property
     def unique_id(self):
-        return f"beszel_{self._system_id}_{self._disk_name}_smart"
+        return f"beszel_{self._system_id}_{self._disk_name}_smart_v2"
 
     @property
     def name(self):
