@@ -18,7 +18,7 @@ In addition to the original sensors, it exposes:
 - Per-interface bandwidth and byte-counter sensors
 - and more. 
 
-It also adds **adjustable polling interval**, proper **state/device classes** so that HA unit changes work seamlessly, saner unit defaults, *and better icons :)*
+It also adds **adjustable polling interval**, proper **state/device classes** so that HA unit changes work seamlessly, saner unit defaults, *and better icon choices :)*
 
 ## Installation
 You can simply click here to install:
@@ -31,9 +31,9 @@ Or do it manually:
 2. Open the menu in the top right and select `Custom repositories`.
 3. Add `https://github.com/inventor7777/improved-beszel-ha`.
 4. Select category `Integration`.
-5. Restart Home Assistant if needed.
 6. Install `Improved Beszel API` from HACS.
-7. Add the integration from the Home Assistant integrations page.
+7. Restart Home Assistant if needed.
+8. Add the integration from the Home Assistant integrations page.
 
 ## Disclaimer
 
@@ -42,7 +42,7 @@ Or do it manually:
 
 ## What It Does
 
-The integration connects to Beszel Hub through its PocketBase-backed API and creates Home Assistant entities for your monitored systems.
+The integration connects to your [Beszel Hub](https://www.beszel.dev/guide/what-is-beszel) install through its PocketBase-backed API and creates Home Assistant entities for your monitored systems running [Beszel Agent](https://www.beszel.dev/guide/agent-installation)
 
 It currently exposes:
 
@@ -83,11 +83,11 @@ Some noisier or less universally useful entities are disabled by default, such a
 
 When adding the integration, use:
 
-- `URL`: The root URL / IP of your Beszel Hub, for example `http://beszel.example.com` or `https://beszel.example.com`
+- `URL`: The root URL / IP of your Beszel Hub, for example `http://192.168.0.0:8090`
 - `Username`: Your Beszel user email/username
 - `Password`: Your Beszel password
 - `Verify SSL`: Whether to verify the Beszel SSL certificate
-- `Check for updates`: Enables the Beszel Hub update entity
+- `Check for updates`: Enables the Beszel Hub update entity 
 - `Polling interval (seconds)`: How often Beszel data is refreshed, adjustable from 10 to 3600 seconds
 
 ## Notes
