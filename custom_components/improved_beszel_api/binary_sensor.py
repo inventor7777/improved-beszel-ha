@@ -20,7 +20,9 @@ def _normalize_smart_attribute_name(name: str) -> str:
 
 def _format_smart_device_label(disk_name: str) -> str:
     label = disk_name or "disk"
-    return label.lower()
+    if label.lower().startswith("nvme"):
+        return f"NVMe{label[4:]}"
+    return label.upper()
 
 
 async def async_setup_entry(hass, entry, async_add_entities):

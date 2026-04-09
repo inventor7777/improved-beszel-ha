@@ -163,7 +163,9 @@ class BeszelSmartBaseSensor(BeszelBaseSensor):
     @property
     def smart_device_label(self):
         label = self._disk_name or "disk"
-        return label.lower()
+        if label.lower().startswith("nvme"):
+            return f"NVMe{label[4:]}"
+        return label.upper()
 
 class BeszelCPUSensor(BeszelBaseSensor):
     @property
@@ -646,7 +648,12 @@ class BeszelDiskUsedSensor(BeszelBaseSensor):
         if not self.system:
             return None
         if self._disk_name:
-            return f"{self.system.name} {self._disk_name.lower()} Used"
+            label = (
+                f"NVMe{self._disk_name[4:]}"
+                if self._disk_name.lower().startswith("nvme")
+                else self._disk_name.upper()
+            )
+            return f"{self.system.name} {label} Used"
         return f"{self.system.name} Disk Used"
 
     @property
@@ -891,7 +898,14 @@ class BeszelEFSDiskSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        return f"{self.system.name} {self._disk_name.lower()}" if self.system else None
+        if not self.system:
+            return None
+        label = (
+            f"NVMe{self._disk_name[4:]}"
+            if self._disk_name.lower().startswith("nvme")
+            else self._disk_name.upper()
+        )
+        return f"{self.system.name} {label}"
 
     @property
     def icon(self):
@@ -1025,7 +1039,12 @@ class BeszelDiskTotalSensor(BeszelBaseSensor):
         if not self.system:
             return None
         if self._disk_name:
-            return f"{self.system.name} {self._disk_name.lower()} Total"
+            label = (
+                f"NVMe{self._disk_name[4:]}"
+                if self._disk_name.lower().startswith("nvme")
+                else self._disk_name.upper()
+            )
+            return f"{self.system.name} {label} Total"
         return f"{self.system.name} Disk Total"
 
     @property
