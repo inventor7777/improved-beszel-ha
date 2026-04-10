@@ -104,6 +104,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
                 entities.append(BeszelAggregateDiskIOSensor(coordinator, system, "read"))
                 entities.append(BeszelAggregateDiskIOSensor(coordinator, system, "write"))
+                entities.append(BeszelCombinedDiskIOSensor(coordinator, system))
                 entities.append(BeszelDiskIOSensor(coordinator, system, "read"))
                 entities.append(BeszelDiskIOSensor(coordinator, system, "write"))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 0, "1m"))
@@ -131,6 +132,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                         entities.append(BeszelEFSDiskSensor(coordinator, system, disk_name))
                         entities.append(BeszelDiskUsedSensor(coordinator, system, disk_name))
                         entities.append(BeszelDiskTotalSensor(coordinator, system, disk_name))
+                        entities.append(BeszelCombinedDiskIOSensor(coordinator, system, disk_name))
                         entities.append(BeszelDiskIOSensor(coordinator, system, "read", disk_name))
                         entities.append(BeszelDiskIOSensor(coordinator, system, "write", disk_name))
                         LOGGER.info(f"Created EFS sensors for {system.name} - {disk_name}")
@@ -1169,7 +1171,9 @@ class BeszelAggregateDiskIOSensor(BeszelBaseSensor):
 
     @property
     def icon(self):
-        return "mdi:database-sync"
+        if self._direction == "read":
+            return "mdi:database-arrow-down"
+        return "mdi:database-arrow-up"
 
     @property
     def native_value(self):
@@ -1178,6 +1182,71 @@ class BeszelAggregateDiskIOSensor(BeszelBaseSensor):
             return None
         value = disk_io[0] if self._direction == "read" else disk_io[1]
         return value / 1_000_000 if value is not None else None
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfDataRate.MEGABYTES_PER_SECOND
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_RATE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def suggested_display_precision(self):
+        return 3
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
+
+
+class BeszelCombinedDiskIOSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, disk_name=None):
+        super().__init__(coordinator, system)
+        self._disk_name = disk_name
+
+    @property
+    def unique_id(self):
+        if self._disk_name:
+            return f"beszel_{self._system_id}_{self._disk_name}_io_v2"
+        return f"beszel_{self._system_id}_disk_io_v2"
+
+    @property
+    def name(self):
+        if not self.system:
+            return None
+        if self._disk_name:
+            return f"{self.system.name} {_format_disk_label(self._disk_name)} IO"
+        return f"{self.system.name} Disk IO"
+
+    @property
+    def icon(self):
+        return "mdi:database-sync"
+
+    @property
+    def native_value(self):
+        if self._disk_name:
+            disk_data = self.stats_data.get("efs", {}).get(self._disk_name, {})
+            if not isinstance(disk_data, dict):
+                return None
+            read_value = disk_data.get("r")
+            write_value = disk_data.get("w")
+            if read_value is None and write_value is None:
+                return None
+            return (read_value or 0) + (write_value or 0)
+
+        disk_io = self.stats_data.get("dio")
+        if not isinstance(disk_io, list) or len(disk_io) < 2:
+            return None
+        read_value = disk_io[0]
+        write_value = disk_io[1]
+        if read_value is None and write_value is None:
+            return None
+        return ((read_value or 0) + (write_value or 0)) / 1_000_000
 
     @property
     def native_unit_of_measurement(self):
