@@ -243,9 +243,8 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
 
         cpus = self.stats_data.get("cpus")
         if isinstance(cpus, list) and cpus:
-            attributes["per_core_percent"] = {
-                f"cpu_{index}": value for index, value in enumerate(cpus, start=1)
-            }
+            for index, value in enumerate(cpus, start=1):
+                attributes[f"cpu_{index}_percent"] = value
 
         return attributes
 
@@ -761,11 +760,9 @@ class BeszelTemperatureSensor(BeszelBaseSensor):
         if not isinstance(temperatures, dict) or not temperatures:
             return {}
         return {
-            "zones_c": {
-                zone_name: value
-                for zone_name, value in temperatures.items()
-                if value is not None
-            }
+            f"{zone_name}_c": value
+            for zone_name, value in temperatures.items()
+            if value is not None
         }
 
 
