@@ -285,6 +285,26 @@ class BeszelCPUSensor(BeszelBaseSensor):
     def state_class(self):
         return SensorStateClass.MEASUREMENT
 
+    @property
+    def extra_state_attributes(self):
+        cpub = self.stats_data.get("cpub")
+        if not isinstance(cpub, list) or len(cpub) < 5:
+            return {}
+
+        user, system, iowait, steal, idle = cpub[:5]
+        other = round(
+            max(0, 100 - sum(value for value in (user, system, iowait, steal, idle) if value is not None)),
+            2,
+        )
+        return {
+            "user_percent": user,
+            "system_percent": system,
+            "iowait_percent": iowait,
+            "steal_percent": steal,
+            "idle_percent": idle,
+            "other_percent": other,
+        }
+
 
 class BeszelGPUSensor(BeszelBaseSensor):
     @property
@@ -343,26 +363,6 @@ class BeszelPerCPUSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
-
-    @property
-    def extra_state_attributes(self):
-        cpub = self.stats_data.get("cpub")
-        if not isinstance(cpub, list) or len(cpub) < 5:
-            return {}
-
-        user, system, iowait, steal, idle = cpub[:5]
-        other = round(
-            max(0, 100 - sum(value for value in (user, system, iowait, steal, idle) if value is not None)),
-            2,
-        )
-        return {
-            "user_percent": user,
-            "system_percent": system,
-            "iowait_percent": iowait,
-            "steal_percent": steal,
-            "idle_percent": idle,
-            "other_percent": other,
-        }
 
     @property
     def suggested_display_precision(self):
@@ -730,6 +730,10 @@ class BeszelSmartCountSensor(BeszelSmartBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
 
     @property
     def entity_registry_enabled_default(self) -> bool:
