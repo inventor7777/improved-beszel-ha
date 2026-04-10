@@ -220,6 +220,147 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
         sys = self.system
         return getattr(sys, "info", {}) if sys else {}
 
+    def _cpu_family_attributes(self):
+        attributes = {"cpu_percent": self.system_info.get("cpu")}
+
+        cpub = self.stats_data.get("cpub")
+        if isinstance(cpub, list) and len(cpub) >= 5:
+            user, system, iowait, steal, idle = cpub[:5]
+            other = round(
+                max(0, 100 - sum(value for value in (user, system, iowait, steal, idle) if value is not None)),
+                2,
+            )
+            attributes.update(
+                {
+                    "user_percent": user,
+                    "system_percent": system,
+                    "iowait_percent": iowait,
+                    "steal_percent": steal,
+                    "idle_percent": idle,
+                    "other_percent": other,
+                }
+            )
+
+        cpus = self.stats_data.get("cpus")
+        if isinstance(cpus, list) and cpus:
+            attributes["per_core_percent"] = {
+                f"cpu_{index}": value for index, value in enumerate(cpus, start=1)
+            }
+
+        return attributes
+
+    def _ram_family_attributes(self):
+        attributes = {
+            "ram_percent": self.system_info.get("mp"),
+            "total_gib": self.stats_data.get("m"),
+            "used_gib": self.stats_data.get("mu"),
+            "cache_gib": self.stats_data.get("mb"),
+        }
+
+        swap_total = self.stats_data.get("s")
+        swap_used = self.stats_data.get("su")
+        swap_used_effective = 0 if swap_used is None and swap_total is not None else swap_used
+        attributes["swap_total_gib"] = swap_total
+        attributes["swap_used_gib"] = swap_used_effective
+        attributes["swap_percent"] = (
+            round((swap_used_effective / swap_total) * 100, 2)
+            if swap_total not in (None, 0) and swap_used_effective is not None
+            else None
+        )
+        return attributes
+
+    def _disk_family_attributes(self, disk_name=None):
+        if disk_name:
+            disk_data = self.stats_data.get("efs", {}).get(disk_name, {})
+            if not isinstance(disk_data, dict):
+                disk_data = {}
+            total = disk_data.get("d")
+            used = disk_data.get("du")
+            read = disk_data.get("r")
+            write = disk_data.get("w")
+            percent = (
+                round((used / total) * 100, 2)
+                if total not in (None, 0) and used is not None
+                else None
+            )
+            io = None if read is None and write is None else round((read or 0) + (write or 0), 3)
+            return {
+                "disk_percent": percent,
+                "total_gib": total,
+                "used_gib": used,
+                "read_mb_s": read,
+                "write_mb_s": write,
+                "io_mb_s": io,
+            }
+
+        disk_io = self.stats_data.get("dio")
+        read_mb_s = None
+        write_mb_s = None
+        io_mb_s = None
+        if isinstance(disk_io, list) and len(disk_io) >= 2:
+            read_value = disk_io[0]
+            write_value = disk_io[1]
+            read_mb_s = round(read_value / 1_000_000, 3) if read_value is not None else None
+            write_mb_s = round(write_value / 1_000_000, 3) if write_value is not None else None
+            io_mb_s = _disk_io_mbps(read_value, write_value)
+
+        return {
+            "disk_percent": self.system_info.get("dp"),
+            "total_gib": self.stats_data.get("d"),
+            "used_gib": self.stats_data.get("du"),
+            "read_mb_s": read_mb_s,
+            "write_mb_s": write_mb_s,
+            "io_mb_s": io_mb_s,
+        }
+
+    def _swap_family_attributes(self):
+        swap_total = self.stats_data.get("s")
+        swap_used = self.stats_data.get("su")
+        swap_used_effective = 0 if swap_used is None and swap_total is not None else swap_used
+        return {
+            "swap_percent": (
+                round((swap_used_effective / swap_total) * 100, 2)
+                if swap_total not in (None, 0) and swap_used_effective is not None
+                else None
+            ),
+            "swap_total_gib": swap_total,
+            "swap_used_gib": swap_used_effective,
+        }
+
+    def _bandwidth_family_attributes(self):
+        attributes = {}
+        bandwidth = self.stats_data.get("b")
+        if isinstance(bandwidth, list) and len(bandwidth) >= 2:
+            attributes["tx_mb_s"] = (
+                round(bandwidth[0] / 1_000_000, 3) if bandwidth[0] is not None else None
+            )
+            attributes["rx_mb_s"] = (
+                round(bandwidth[1] / 1_000_000, 3) if bandwidth[1] is not None else None
+            )
+
+        interfaces = self.stats_data.get("ni", {})
+        if isinstance(interfaces, dict) and interfaces:
+            attributes["interfaces"] = {
+                name: {
+                    "bandwidth_rx_mb_s": round(values[0] / 1_000_000, 3)
+                    if len(values) > 0 and values[0] is not None
+                    else None,
+                    "bandwidth_tx_mb_s": round(values[1] / 1_000_000, 3)
+                    if len(values) > 1 and values[1] is not None
+                    else None,
+                    "rx_gib": round(values[2] / 1_000_000_000, 3)
+                    if len(values) > 2 and values[2] is not None
+                    else None,
+                    "tx_gib": round(values[3] / 1_000_000_000, 3)
+                    if len(values) > 3 and values[3] is not None
+                    else None,
+                }
+                for name, values in interfaces.items()
+                if isinstance(values, list)
+            }
+
+        return attributes
+
     @property
     def device_info(self):
         sys = self.system
@@ -269,6 +410,52 @@ class BeszelSmartBaseSensor(BeszelBaseSensor):
             attribute_map[normalized] = value
         return attribute_map
 
+    def _smart_family_attributes(self):
+        device_data = self.smart_device_data
+        if not device_data:
+            return {}
+
+        attributes = {"device": self._device_name, "health_state": device_data.get("state", "")}
+
+        temp = device_data.get("temp")
+        if temp is not None:
+            attributes["temperature_c"] = temp
+
+        capacity = device_data.get("capacity", 0)
+        if capacity:
+            attributes["capacity_gib"] = round(capacity / (1024**3), 2)
+            attributes["capacity_tib"] = round(capacity / (1024**4), 2)
+
+        hours = device_data.get("hours")
+        if hours is not None:
+            attributes["power_on_hours"] = hours
+            attributes["power_on_days"] = round(hours / 24, 1)
+
+        cycles = device_data.get("cycles")
+        if cycles is not None:
+            attributes["power_cycles"] = cycles
+
+        for key in ("model", "serial", "firmware", "type"):
+            value = device_data.get(key)
+            if value:
+                attributes[key] = value
+
+        for attribute in device_data.get("attributes") or []:
+            name = attribute.get("n")
+            if not name:
+                continue
+            normalized = _normalize_smart_attribute_name(name)
+            if "rs" in attribute and attribute.get("rs") not in (None, ""):
+                attributes[f"smart_{normalized}"] = attribute.get("rs")
+            elif "rv" in attribute:
+                attributes[f"smart_{normalized}"] = attribute.get("rv")
+
+            raw_value = attribute.get("rv")
+            if raw_value is not None:
+                attributes[f"smart_{normalized}_raw"] = raw_value
+
+        return attributes
+
 class BeszelCPUSensor(BeszelBaseSensor):
     @property
     def unique_id(self):
@@ -296,33 +483,7 @@ class BeszelCPUSensor(BeszelBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        cpub = self.stats_data.get("cpub")
-        attributes = {}
-
-        if isinstance(cpub, list) and len(cpub) >= 5:
-            user, system, iowait, steal, idle = cpub[:5]
-            other = round(
-                max(0, 100 - sum(value for value in (user, system, iowait, steal, idle) if value is not None)),
-                2,
-            )
-            attributes.update(
-                {
-                    "user_percent": user,
-                    "system_percent": system,
-                    "iowait_percent": iowait,
-                    "steal_percent": steal,
-                    "idle_percent": idle,
-                    "other_percent": other,
-                }
-            )
-
-        cpus = self.stats_data.get("cpus")
-        if isinstance(cpus, list) and cpus:
-            attributes["per_core_percent"] = {
-                f"cpu_{index}": value for index, value in enumerate(cpus, start=1)
-            }
-
-        return attributes
+        return self._cpu_family_attributes()
 
 
 class BeszelGPUSensor(BeszelBaseSensor):
@@ -384,6 +545,10 @@ class BeszelPerCPUSensor(BeszelBaseSensor):
         return SensorStateClass.MEASUREMENT
 
     @property
+    def extra_state_attributes(self):
+        return self._cpu_family_attributes()
+
+    @property
     def suggested_display_precision(self):
         return 0
 
@@ -419,23 +584,7 @@ class BeszelRAMSensor(BeszelBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        attributes = {
-            "total_gib": self.stats_data.get("m"),
-            "used_gib": self.stats_data.get("mu"),
-            "cache_gib": self.stats_data.get("mb"),
-        }
-
-        swap_total = self.stats_data.get("s")
-        swap_used = self.stats_data.get("su")
-        attributes["swap_total_gib"] = swap_total
-        attributes["swap_used_gib"] = 0 if swap_used is None and swap_total is not None else swap_used
-        attributes["swap_percent"] = (
-            round((attributes["swap_used_gib"] / swap_total) * 100, 2)
-            if swap_total not in (None, 0) and attributes["swap_used_gib"] is not None
-            else None
-        )
-
-        return attributes
+        return self._ram_family_attributes()
 
 
 class BeszelDiskSensor(BeszelBaseSensor):
@@ -466,24 +615,7 @@ class BeszelDiskSensor(BeszelBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        disk_io = self.stats_data.get("dio")
-        read_mb_s = None
-        write_mb_s = None
-        io_mb_s = None
-        if isinstance(disk_io, list) and len(disk_io) >= 2:
-            read_value = disk_io[0]
-            write_value = disk_io[1]
-            read_mb_s = round(read_value / 1_000_000, 3) if read_value is not None else None
-            write_mb_s = round(write_value / 1_000_000, 3) if write_value is not None else None
-            io_mb_s = _disk_io_mbps(read_value, write_value)
-
-        return {
-            "total_gib": self.stats_data.get("d"),
-            "used_gib": self.stats_data.get("du"),
-            "read_mb_s": read_mb_s,
-            "write_mb_s": write_mb_s,
-            "io_mb_s": io_mb_s,
-        }
+        return self._disk_family_attributes()
 
 
 class BeszelBandwidthSensor(BeszelBaseSensor):
@@ -522,38 +654,7 @@ class BeszelBandwidthSensor(BeszelBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        attributes = {}
-        bandwidth = self.stats_data.get("b")
-        if isinstance(bandwidth, list) and len(bandwidth) >= 2:
-            attributes["tx_mb_s"] = (
-                round(bandwidth[0] / 1_000_000, 3) if bandwidth[0] is not None else None
-            )
-            attributes["rx_mb_s"] = (
-                round(bandwidth[1] / 1_000_000, 3) if bandwidth[1] is not None else None
-            )
-
-        interfaces = self.stats_data.get("ni", {})
-        if isinstance(interfaces, dict) and interfaces:
-            attributes["interfaces"] = {
-                name: {
-                    "bandwidth_rx_mb_s": round(values[0] / 1_000_000, 3)
-                    if len(values) > 0 and values[0] is not None
-                    else None,
-                    "bandwidth_tx_mb_s": round(values[1] / 1_000_000, 3)
-                    if len(values) > 1 and values[1] is not None
-                    else None,
-                    "rx_gib": round(values[2] / 1_000_000_000, 3)
-                    if len(values) > 2 and values[2] is not None
-                    else None,
-                    "tx_gib": round(values[3] / 1_000_000_000, 3)
-                    if len(values) > 3 and values[3] is not None
-                    else None,
-                }
-                for name, values in interfaces.items()
-                if isinstance(values, list)
-            }
-
-        return attributes
+        return self._bandwidth_family_attributes()
 
 
 class BeszelNetworkReceiveSensor(BeszelBaseSensor):
@@ -589,7 +690,11 @@ class BeszelNetworkReceiveSensor(BeszelBaseSensor):
     @property
     def suggested_display_precision(self):
         return 2
-        
+
+    @property
+    def extra_state_attributes(self):
+        return self._bandwidth_family_attributes()
+
 class BeszelNetworkSendSensor(BeszelBaseSensor):
     @property
     def unique_id(self):
@@ -699,16 +804,7 @@ class BeszelSmartTemperatureSensor(BeszelSmartBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        temperatures = self.stats_data.get("t", {})
-        if not isinstance(temperatures, dict) or not temperatures:
-            return {}
-        return {
-            "zones_c": {
-                zone_name: value
-                for zone_name, value in temperatures.items()
-                if value is not None
-            }
-        }
+        return self._smart_family_attributes()
 
     @property
     def entity_category(self):
@@ -755,6 +851,10 @@ class BeszelSmartPowerOnHoursSensor(BeszelSmartBaseSensor):
         )
         return smart_device_count <= 2
 
+    @property
+    def extra_state_attributes(self):
+        return self._smart_family_attributes()
+
 
 class BeszelSmartPowerOnDaysSensor(BeszelSmartBaseSensor):
     @property
@@ -793,6 +893,10 @@ class BeszelSmartPowerOnDaysSensor(BeszelSmartBaseSensor):
     @property
     def entity_registry_enabled_default(self) -> bool:
         return False
+
+    @property
+    def extra_state_attributes(self):
+        return self._smart_family_attributes()
 
 
 class BeszelSmartCountSensor(BeszelSmartBaseSensor):
@@ -859,6 +963,10 @@ class BeszelSmartCountSensor(BeszelSmartBaseSensor):
     @property
     def entity_registry_enabled_default(self) -> bool:
         return False
+
+    @property
+    def extra_state_attributes(self):
+        return self._smart_family_attributes()
 
 
 class BeszelNamedTemperatureSensor(BeszelBaseSensor):
@@ -939,6 +1047,10 @@ class BeszelLoadAverageSensor(BeszelBaseSensor):
         return 2
 
     @property
+    def extra_state_attributes(self):
+        return self._bandwidth_family_attributes()
+
+    @property
     def entity_registry_enabled_default(self) -> bool:
         return False
 
@@ -971,6 +1083,10 @@ class BeszelMemoryUsedSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        return self._ram_family_attributes()
 
 
 class BeszelMemoryCacheUsedSensor(BeszelBaseSensor):
@@ -1005,6 +1121,10 @@ class BeszelMemoryCacheUsedSensor(BeszelBaseSensor):
     @property
     def entity_registry_enabled_default(self) -> bool:
         return False
+
+    @property
+    def extra_state_attributes(self):
+        return self._ram_family_attributes()
 
 
 class BeszelTotalServicesSensor(BeszelBaseSensor):
@@ -1108,6 +1228,10 @@ class BeszelDiskUsedSensor(BeszelBaseSensor):
     def state_class(self):
         return SensorStateClass.MEASUREMENT
 
+    @property
+    def extra_state_attributes(self):
+        return self._disk_family_attributes(self._disk_name)
+
 
 class BeszelSwapTotalSensor(BeszelBaseSensor):
     @property
@@ -1137,6 +1261,10 @@ class BeszelSwapTotalSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        return self._swap_family_attributes()
 
 
 class BeszelSwapSensor(BeszelBaseSensor):
@@ -1174,12 +1302,7 @@ class BeszelSwapSensor(BeszelBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        swap_total = self.stats_data.get("s")
-        swap_used = self.stats_data.get("su")
-        return {
-            "swap_total_gib": swap_total,
-            "swap_used_gib": 0 if swap_used is None and swap_total is not None else swap_used,
-        }
+        return self._swap_family_attributes()
 
 
 class BeszelSwapUsedSensor(BeszelBaseSensor):
@@ -1215,6 +1338,10 @@ class BeszelSwapUsedSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        return self._swap_family_attributes()
 
 
 class BeszelDiskIOSensor(BeszelBaseSensor):
@@ -1280,6 +1407,10 @@ class BeszelDiskIOSensor(BeszelBaseSensor):
     def entity_registry_enabled_default(self) -> bool:
         return False
 
+    @property
+    def extra_state_attributes(self):
+        return self._disk_family_attributes(self._disk_name)
+
 
 class BeszelAggregateDiskIOSensor(BeszelBaseSensor):
     def __init__(self, coordinator, system, direction):
@@ -1330,6 +1461,10 @@ class BeszelAggregateDiskIOSensor(BeszelBaseSensor):
     @property
     def entity_registry_enabled_default(self) -> bool:
         return False
+
+    @property
+    def extra_state_attributes(self):
+        return self._disk_family_attributes()
 
 
 class BeszelCombinedDiskIOSensor(BeszelBaseSensor):
@@ -1396,6 +1531,10 @@ class BeszelCombinedDiskIOSensor(BeszelBaseSensor):
     def entity_registry_enabled_default(self) -> bool:
         return False
 
+    @property
+    def extra_state_attributes(self):
+        return self._disk_family_attributes(self._disk_name)
+
 
 class BeszelAggregateCombinedDiskIOSensor(BeszelBaseSensor):
     @property
@@ -1440,6 +1579,10 @@ class BeszelAggregateCombinedDiskIOSensor(BeszelBaseSensor):
     @property
     def entity_registry_enabled_default(self) -> bool:
         return False
+
+    @property
+    def extra_state_attributes(self):
+        return self._disk_family_attributes()
 
 
 class BeszelInterfaceCounterSensor(BeszelBaseSensor):
@@ -1488,6 +1631,10 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
     @property
     def entity_registry_enabled_default(self) -> bool:
         return _single_interface_enabled_default(self.stats_data)
+
+    @property
+    def extra_state_attributes(self):
+        return self._bandwidth_family_attributes()
 
 
 class BeszelInterfaceBandwidthSensor(BeszelBaseSensor):
@@ -1540,6 +1687,10 @@ class BeszelInterfaceBandwidthSensor(BeszelBaseSensor):
     @property
     def entity_registry_enabled_default(self) -> bool:
         return _single_interface_enabled_default(self.stats_data)
+
+    @property
+    def extra_state_attributes(self):
+        return self._bandwidth_family_attributes()
 
 
 class BeszelUptimeSensor(BeszelBaseSensor):
@@ -1626,22 +1777,7 @@ class BeszelEFSDiskSensor(BeszelBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        """Return additional state attributes for the EFS disk."""
-        if not self.stats_data:
-            return {}
-
-        efs_data = self.stats_data.get('efs', {})
-        disk_data = efs_data.get(self._disk_name, {})
-
-        return {
-            "total_disk_space_gib": disk_data.get('d'),
-            "disk_used_gib": disk_data.get('du'),
-            "read_mb_s": disk_data.get('r'),
-            "write_mb_s": disk_data.get('w'),
-            "io_mb_s": None
-            if disk_data.get('r') is None and disk_data.get('w') is None
-            else round((disk_data.get('r') or 0) + (disk_data.get('w') or 0), 3),
-        }
+        return self._disk_family_attributes(self._disk_name)
 
 
 
@@ -1721,6 +1857,10 @@ class BeszelRAMTotalSensor(BeszelBaseSensor):
     def state_class(self):
         return SensorStateClass.MEASUREMENT
 
+    @property
+    def extra_state_attributes(self):
+        return self._ram_family_attributes()
+
 
 class BeszelDiskTotalSensor(BeszelBaseSensor):
     def __init__(self, coordinator, system, disk_name=None):
@@ -1772,3 +1912,7 @@ class BeszelDiskTotalSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        return self._disk_family_attributes(self._disk_name)
