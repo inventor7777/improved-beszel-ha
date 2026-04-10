@@ -10,11 +10,15 @@ However, I am totally open with merging this back into the original project if t
 In addition to the original sensors, it exposes:
 
 - Additional disk usage / used / total sensors for extra disks reported by Beszel, such as `SDA`, `SDA Used`, and `SDA Total`
+- Aggregate disk read / write sensors
+- Per-disk read / write sensors for extra disks
 - Per-interface bandwidth RX / TX rate
 - Per-interface RX/TX byte counters
+- Per-core CPU usage sensors
 - Swap info when the system reports swap
 - S.M.A.R.T. disk health entities and attributes
 - S.M.A.R.T. temperature / power-on-hours sensors
+- S.M.A.R.T. count sensors for key disk-failure indicators
 - Load average sensors
 - Named temperature sensors
 - Per-interface bandwidth and byte-counter sensors
@@ -59,10 +63,13 @@ It currently exposes:
 - Disk usage percent
 - Disk total
 - Disk used
+- Aggregate disk reads / writes
+- Disk read / write rate
 - Swap usage percent
 - Swap total
 - Swap used
 - Additional disk usage / used / total sensors for extra disks reported by Beszel, such as `SDA`, `SDA Used`, and `SDA Total`
+- Additional disk read / write sensors for extra disks reported by Beszel, such as `SDA Read` and `SDA Write`
 - Uptime
 - Main system temperature
 - Additional named temperatures from Beszel when available
@@ -70,16 +77,21 @@ It currently exposes:
 - Bandwidth RX / TX rate
 - Per-interface bandwidth RX / TX rate
 - Per-interface RX/TX byte counters
+- Per-core CPU usage
 - GPU usage when reported by Beszel
 - Battery when reported by Beszel
 - Beszel Hub update status
 - S.M.A.R.T. disk health entities and attributes
 - S.M.A.R.T. temperature / power-on-hours sensors
+- S.M.A.R.T. count sensors for reallocated sectors, pending sectors, offline uncorrectable, load cycle count, and start/stop count
 - Number of systemd services failed/running
 
 Some noisier or less universally useful entities are disabled by default, such as:
 
 - Load average sensors
+- Per-core CPU sensors
+- Aggregate disk reads / writes
+- Disk read / write sensors
 - Named temperature sensors when a system reports more than 4 named temperature zones
 - Per-interface bandwidth and byte-counter sensors
 - S.M.A.R.T. diagnostic sensors when a system has more disks
@@ -111,12 +123,29 @@ S.M.A.R.T. entities use disk-oriented names such as:
 - `test SDA S.M.A.R.T.`
 - `test SDA S.M.A.R.T. Temperature`
 - `test NVMe0 S.M.A.R.T. Power On Hours`
+- `test SDA S.M.A.R.T. Reallocated Sectors`
+- `test SDA S.M.A.R.T. Pending Sectors`
+- `test SDA S.M.A.R.T. Start Stop Count`
 
 Additional non-primary disks reported by Beszel follow the same disk-first pattern, for example:
 
 - `test SDA`
 - `test SDA Used`
 - `test SDA Total`
+- `test SDA Read`
+- `test SDA Write`
+
+Aggregate disk I/O entities follow the system name, for example:
+
+- `test Reads`
+- `test Writes`
+
+Per-core CPU entities follow the CPU number, for example:
+
+- `test CPU 1`
+- `test CPU 2`
+
+The main CPU sensor also includes CPU breakdown attributes such as `user_percent`, `system_percent`, `iowait_percent`, `steal_percent`, `idle_percent`, and `other_percent`.
 
 Per-interface network entities follow the interface name and direction, for example:
 

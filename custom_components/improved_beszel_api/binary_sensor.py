@@ -29,7 +29,9 @@ SMART_ATTRIBUTE_RENAMES = {
 
 
 def _normalize_smart_attribute_name(name: str) -> str:
-    normalized = re.sub(r"(?<!^)(?=[A-Z])", "_", name.strip())
+    normalized = name.strip()
+    normalized = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", normalized)
+    normalized = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", normalized)
     normalized = (
         normalized.lower()
         .replace(" ", "_")

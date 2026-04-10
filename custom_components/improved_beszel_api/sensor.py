@@ -1,3 +1,5 @@
+import re
+
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorDeviceClass,
@@ -17,12 +19,52 @@ from homeassistant.helpers.icon import icon_for_battery_level
 from .const import DOMAIN, LOGGER
 
 NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD = 4
+SMART_ATTRIBUTE_RENAMES = {
+    "criticalwarning": "critical_warning",
+    "availablespare": "available_spare",
+    "availablesparethreshold": "available_spare_threshold",
+    "percentageused": "percentage_used",
+    "dataunitsread": "data_units_read",
+    "dataunitswritten": "data_units_written",
+    "hostreads": "host_reads",
+    "hostwrites": "host_writes",
+    "controllerbusytime": "controller_busy_time",
+    "powercycles": "power_cycles",
+    "poweronhours": "power_on_hours",
+    "unsafeshutdowns": "unsafe_shutdowns",
+    "mediaerrors": "media_errors",
+    "numerrlogentries": "num_err_log_entries",
+    "warningtemptime": "warning_temp_time",
+    "criticalcomptime": "critical_comp_time",
+}
+SMART_COUNT_SENSOR_ALIASES = {
+    "reallocated_sectors": ("reallocated_sector_ct", "reallocated_sectors_count"),
+    "pending_sectors": ("current_pending_sector", "pending_sector_count"),
+    "offline_uncorrectable": ("offline_uncorrectable",),
+    "load_cycle_count": ("load_cycle_count",),
+    "start_stop_count": ("start_stop_count",),
+}
 
 
 def _format_disk_label(disk_name: str) -> str:
     if disk_name.lower().startswith("nvme"):
         return f"NVMe{disk_name[4:]}"
     return disk_name.upper()
+
+
+def _normalize_smart_attribute_name(name: str) -> str:
+    normalized = name.strip()
+    normalized = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", normalized)
+    normalized = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", normalized)
+    normalized = (
+        normalized.lower()
+        .replace(" ", "_")
+        .replace(".", "")
+        .replace("-", "_")
+        .replace("/", "_")
+    )
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return SMART_ATTRIBUTE_RENAMES.get(normalized, normalized)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -99,6 +141,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     if device.get("hours") is not None:
                         entities.append(BeszelSmartPowerOnHoursSensor(coordinator, system, device))
                         entities.append(BeszelSmartPowerOnDaysSensor(coordinator, system, device))
+                    for metric_key in SMART_COUNT_SENSOR_ALIASES:
+                        if BeszelSmartCountSensor.has_metric(device, metric_key):
+                            entities.append(
+                                BeszelSmartCountSensor(
+                                    coordinator, system, device, metric_key
+                                )
+                            )
 
                 for temp_name in system_stats.get("t", {}):
                     entities.append(BeszelNamedTemperatureSensor(coordinator, system, temp_name))
@@ -192,6 +241,20 @@ class BeszelSmartBaseSensor(BeszelBaseSensor):
             return f"NVMe{label[4:]}"
         return label.upper()
 
+    @property
+    def smart_attribute_map(self):
+        attribute_map = {}
+        for attribute in self.smart_device_data.get("attributes") or []:
+            name = attribute.get("n")
+            if not name:
+                continue
+            normalized = _normalize_smart_attribute_name(name)
+            value = attribute.get("rv")
+            if value is None and attribute.get("rs") not in (None, ""):
+                value = attribute.get("rs")
+            attribute_map[normalized] = value
+        return attribute_map
+
 class BeszelCPUSensor(BeszelBaseSensor):
     @property
     def unique_id(self):
@@ -275,6 +338,26 @@ class BeszelPerCPUSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        cpub = self.stats_data.get("cpub")
+        if not isinstance(cpub, list) or len(cpub) < 5:
+            return {}
+
+        user, system, iowait, steal, idle = cpub[:5]
+        other = round(
+            max(0, 100 - sum(value for value in (user, system, iowait, steal, idle) if value is not None)),
+            2,
+        )
+        return {
+            "user_percent": user,
+            "system_percent": system,
+            "iowait_percent": iowait,
+            "steal_percent": steal,
+            "idle_percent": idle,
+            "other_percent": other,
+        }
 
     @property
     def suggested_display_precision(self):
@@ -580,6 +663,68 @@ class BeszelSmartPowerOnDaysSensor(BeszelSmartBaseSensor):
     @property
     def entity_category(self):
         return EntityCategory.DIAGNOSTIC
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
+
+
+class BeszelSmartCountSensor(BeszelSmartBaseSensor):
+    METRIC_NAMES = {
+        "reallocated_sectors": "Reallocated Sectors",
+        "pending_sectors": "Pending Sectors",
+        "offline_uncorrectable": "Offline Uncorrectable",
+        "load_cycle_count": "Load Cycle Count",
+        "start_stop_count": "Start Stop Count",
+    }
+
+    def __init__(self, coordinator, system, device_data, metric_key):
+        super().__init__(coordinator, system, device_data)
+        self._metric_key = metric_key
+
+    @classmethod
+    def has_metric(cls, device_data, metric_key):
+        aliases = SMART_COUNT_SENSOR_ALIASES.get(metric_key, ())
+        for attribute in device_data.get("attributes") or []:
+            name = attribute.get("n")
+            if not name:
+                continue
+            if _normalize_smart_attribute_name(name) in aliases:
+                return True
+        return False
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_{self._disk_name}_smart_{self._metric_key}_v2"
+
+    @property
+    def name(self):
+        return (
+            f"{self.system.name} {self.smart_device_label} S.M.A.R.T. {self.METRIC_NAMES[self._metric_key]}"
+            if self.system
+            else None
+        )
+
+    @property
+    def icon(self):
+        if self._metric_key in {"load_cycle_count", "start_stop_count"}:
+            return "mdi:harddisk-plus"
+        return "mdi:harddisk-remove"
+
+    @property
+    def native_value(self):
+        for alias in SMART_COUNT_SENSOR_ALIASES[self._metric_key]:
+            value = self.smart_attribute_map.get(alias)
+            if value is not None:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    return value
+        return None
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
 
     @property
     def entity_registry_enabled_default(self) -> bool:
