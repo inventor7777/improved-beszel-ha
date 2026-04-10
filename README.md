@@ -2,7 +2,7 @@
 
 Improved Beszel API is a Home Assistant custom integration for [Beszel](https://www.beszel.dev/).
 
-This project is a maintained fork of the original [`Ronjar/beszel-ha`](https://github.com/Ronjar/beszel-ha). The original integration is great but this fork exists to keep development moving and expose more of the useful data already available in the Beszel backend. 
+This project is a much more feature-rich fork of the original [`Ronjar/beszel-ha`](https://github.com/Ronjar/beszel-ha). The original integration is great but I really wanted to test all sorts of features and expose more of the useful data already available in the Beszel backend. 
 
 However, I am totally open with merging this back into the original project if that turns out to be better long term. I have not submitted any PRs yet, as I want to test and make sure this keeps the top notch quality of the original before even thinking about proposing the massive changes.
 
