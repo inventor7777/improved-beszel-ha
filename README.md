@@ -6,6 +6,19 @@ This project is a maintained fork of the original [`Ronjar/beszel-ha`](https://g
 
 However, I am totally open with merging this back into the original project if that turns out to be better long term.
 
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="pictures/sensors.png" width="100%"><br>
+      Sensors
+    </td>
+    <td align="center">
+      <img src="pictures/diagnostic.png" width="100%"><br>
+      Diagnostics
+    </td>
+  </tr>
+</table>
+
 ## What has changed vs the original?
 In addition to the original sensors, it exposes:
 
