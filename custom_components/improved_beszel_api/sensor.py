@@ -417,6 +417,26 @@ class BeszelRAMSensor(BeszelBaseSensor):
     def state_class(self):
         return SensorStateClass.MEASUREMENT
 
+    @property
+    def extra_state_attributes(self):
+        attributes = {
+            "total_gib": self.stats_data.get("m"),
+            "used_gib": self.stats_data.get("mu"),
+            "cache_gib": self.stats_data.get("mb"),
+        }
+
+        swap_total = self.stats_data.get("s")
+        swap_used = self.stats_data.get("su")
+        attributes["swap_total_gib"] = swap_total
+        attributes["swap_used_gib"] = 0 if swap_used is None and swap_total is not None else swap_used
+        attributes["swap_percent"] = (
+            round((attributes["swap_used_gib"] / swap_total) * 100, 2)
+            if swap_total not in (None, 0) and attributes["swap_used_gib"] is not None
+            else None
+        )
+
+        return attributes
+
 
 class BeszelDiskSensor(BeszelBaseSensor):
 
@@ -447,22 +467,22 @@ class BeszelDiskSensor(BeszelBaseSensor):
     @property
     def extra_state_attributes(self):
         disk_io = self.stats_data.get("dio")
-        read_mbps = None
-        write_mbps = None
-        io_mbps = None
+        read_mb_s = None
+        write_mb_s = None
+        io_mb_s = None
         if isinstance(disk_io, list) and len(disk_io) >= 2:
             read_value = disk_io[0]
             write_value = disk_io[1]
-            read_mbps = round(read_value / 1_000_000, 3) if read_value is not None else None
-            write_mbps = round(write_value / 1_000_000, 3) if write_value is not None else None
-            io_mbps = _disk_io_mbps(read_value, write_value)
+            read_mb_s = round(read_value / 1_000_000, 3) if read_value is not None else None
+            write_mb_s = round(write_value / 1_000_000, 3) if write_value is not None else None
+            io_mb_s = _disk_io_mbps(read_value, write_value)
 
         return {
             "total_gib": self.stats_data.get("d"),
             "used_gib": self.stats_data.get("du"),
-            "read_mbps": read_mbps,
-            "write_mbps": write_mbps,
-            "io_mbps": io_mbps,
+            "read_mb_s": read_mb_s,
+            "write_mb_s": write_mb_s,
+            "io_mb_s": io_mb_s,
         }
 
 
@@ -505,10 +525,10 @@ class BeszelBandwidthSensor(BeszelBaseSensor):
         attributes = {}
         bandwidth = self.stats_data.get("b")
         if isinstance(bandwidth, list) and len(bandwidth) >= 2:
-            attributes["tx_mbps"] = (
+            attributes["tx_mb_s"] = (
                 round(bandwidth[0] / 1_000_000, 3) if bandwidth[0] is not None else None
             )
-            attributes["rx_mbps"] = (
+            attributes["rx_mb_s"] = (
                 round(bandwidth[1] / 1_000_000, 3) if bandwidth[1] is not None else None
             )
 
@@ -516,10 +536,10 @@ class BeszelBandwidthSensor(BeszelBaseSensor):
         if isinstance(interfaces, dict) and interfaces:
             attributes["interfaces"] = {
                 name: {
-                    "bandwidth_rx_mbps": round(values[0] / 1_000_000, 3)
+                    "bandwidth_rx_mb_s": round(values[0] / 1_000_000, 3)
                     if len(values) > 0 and values[0] is not None
                     else None,
-                    "bandwidth_tx_mbps": round(values[1] / 1_000_000, 3)
+                    "bandwidth_tx_mb_s": round(values[1] / 1_000_000, 3)
                     if len(values) > 1 and values[1] is not None
                     else None,
                     "rx_gib": round(values[2] / 1_000_000_000, 3)
