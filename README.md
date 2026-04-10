@@ -52,14 +52,14 @@ Or do it manually:
 2. Open the menu in the top right and select `Custom repositories`.
 3. Add `https://github.com/inventor7777/improved-beszel-ha`.
 4. Select category `Integration`.
-6. Install `Improved Beszel API` from HACS.
-7. Restart Home Assistant if needed.
+6. Download `Improved Beszel API` from HACS.
+7. Restart Home Assistant from the Repairs menu if needed.
 8. Add the integration from the Home Assistant integrations page.
 
 ## Disclaimer
 
 - This is a fork, not the original upstream integration. Credit goes fully to @ronjar for creation and initial development.
-- All development after the original fork was done by GPT 5.4 Codex under close supervision and testing.
+- All development after the original fork was done by GPT 5.4 Codex, but under close supervision and testing. Every change it made I tested the change thoroughly, and I use this as my only Beszel integration. 
 
 ## Features
 
