@@ -150,13 +150,13 @@ Per-core CPU entities follow the CPU number, for example:
 - `test CPU 1`
 - `test CPU 2`
 
-The main CPU sensor also includes CPU breakdown attributes such as `user_percent`, `system_percent`, `iowait_percent`, `steal_percent`, `idle_percent`, `other_percent`, and a `per_core_percent` mapping.
+The main CPU sensor also includes CPU breakdown attributes such as `user_percent`, `system_percent`, `iowait_percent`, `steal_percent`, `idle_percent`, `other_percent`, plus flat per-core attributes like `cpu_1_percent` and `cpu_2_percent`.
 
 The main Disk, Bandwidth, and Temperature sensors also expose richer attributes:
 
 - `Disk`: totals plus read / write / combined I/O rates
 - `Bandwidth`: aggregate RX/TX plus nested per-interface RX/TX/bandwidth values
-- `Temperature`: a `zones_c` mapping for named temperature zones
+- `Temperature`: flat named temperature zone attributes like `acpitz_c` and `coretemp_core_0_c`
 
 Per-interface network entities follow the interface name and direction, for example:
 
