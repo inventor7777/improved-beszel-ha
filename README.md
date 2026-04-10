@@ -64,12 +64,14 @@ It currently exposes:
 - Disk total
 - Disk used
 - Aggregate disk reads / writes
-- Disk read / write rate
+- Aggregate disk I/O
+- Disk I/O read / write rate
+- Disk I/O total rate
 - Swap usage percent
 - Swap total
 - Swap used
 - Additional disk usage / used / total sensors for extra disks reported by Beszel, such as `SDA`, `SDA Used`, and `SDA Total`
-- Additional disk read / write sensors for extra disks reported by Beszel, such as `SDA Read` and `SDA Write`
+- Additional disk I/O sensors for extra disks reported by Beszel, such as `SDA IO Read`, `SDA IO Write`, and `SDA IO`
 - Uptime
 - Main system temperature
 - Additional named temperatures from Beszel when available
@@ -91,7 +93,8 @@ Some noisier or less universally useful entities are disabled by default, such a
 - Load average sensors
 - Per-core CPU sensors
 - Aggregate disk reads / writes
-- Disk read / write sensors
+- Aggregate disk I/O
+- Disk I/O sensors
 - Named temperature sensors when a system reports more than 4 named temperature zones
 - Per-interface bandwidth and byte-counter sensors
 - S.M.A.R.T. diagnostic sensors when a system has more disks
@@ -132,20 +135,28 @@ Additional non-primary disks reported by Beszel follow the same disk-first patte
 - `test SDA`
 - `test SDA Used`
 - `test SDA Total`
-- `test SDA Read`
-- `test SDA Write`
+- `test SDA IO Read`
+- `test SDA IO Write`
+- `test SDA IO`
 
 Aggregate disk I/O entities follow the system name, for example:
 
-- `test Reads`
-- `test Writes`
+- `test IO Reads`
+- `test IO Writes`
+- `test IO`
 
 Per-core CPU entities follow the CPU number, for example:
 
 - `test CPU 1`
 - `test CPU 2`
 
-The main CPU sensor also includes CPU breakdown attributes such as `user_percent`, `system_percent`, `iowait_percent`, `steal_percent`, `idle_percent`, and `other_percent`.
+The main CPU sensor also includes CPU breakdown attributes such as `user_percent`, `system_percent`, `iowait_percent`, `steal_percent`, `idle_percent`, `other_percent`, and a `per_core_percent` mapping.
+
+The main Disk, Bandwidth, and Temperature sensors also expose richer attributes:
+
+- `Disk`: totals plus read / write / combined I/O rates
+- `Bandwidth`: aggregate RX/TX plus nested per-interface RX/TX/bandwidth values
+- `Temperature`: a `zones_c` mapping for named temperature zones
 
 Per-interface network entities follow the interface name and direction, for example:
 
