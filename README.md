@@ -1,6 +1,6 @@
 # Improved Beszel API
 
-Improved Beszel API is a Home Assistant custom integration for [Beszel](https://www.beszel.dev/).
+Improved Beszel API is a Home Assistant custom integration for [Beszel](https://www.beszel.dev/). Pairs well with [my status grid card](https://github.com/inventor7777/status-grid-card) 😉
 
 This project is a much more feature-rich fork of the original [`Ronjar/beszel-ha`](https://github.com/Ronjar/beszel-ha). The original integration is great but I really wanted to test all sorts of features and expose more of the useful data already available in the Beszel backend. 
 
@@ -112,7 +112,6 @@ Some noisier or less universally useful entities are disabled by default, such a
 - Per-interface bandwidth and byte-counter sensors
 - S.M.A.R.T. diagnostic sensors when a system has more disks
 - RAM cache used
-
 
 ## Setup
 
