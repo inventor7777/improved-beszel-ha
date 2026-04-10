@@ -1172,6 +1172,15 @@ class BeszelSwapSensor(BeszelBaseSensor):
     def state_class(self):
         return SensorStateClass.MEASUREMENT
 
+    @property
+    def extra_state_attributes(self):
+        swap_total = self.stats_data.get("s")
+        swap_used = self.stats_data.get("su")
+        return {
+            "swap_total_gib": swap_total,
+            "swap_used_gib": 0 if swap_used is None and swap_total is not None else swap_used,
+        }
+
 
 class BeszelSwapUsedSensor(BeszelBaseSensor):
     @property
