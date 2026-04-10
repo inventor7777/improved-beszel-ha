@@ -18,6 +18,13 @@ from .const import DOMAIN, LOGGER
 
 NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD = 4
 
+
+def _format_disk_label(disk_name: str) -> str:
+    if disk_name.lower().startswith("nvme"):
+        return f"NVMe{disk_name[4:]}"
+    return disk_name.upper()
+
+
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
@@ -44,13 +51,19 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entities.append(BeszelMemoryUsedSensor(coordinator, system))
                 entities.append(BeszelMemoryCacheUsedSensor(coordinator, system))
                 entities.append(BeszelDiskUsedSensor(coordinator, system))
-                entities.append(BeszelLoadAverageSensor(coordinator, system, 0, "1m"))
-                entities.append(BeszelLoadAverageSensor(coordinator, system, 1, "5m"))
-                entities.append(BeszelLoadAverageSensor(coordinator, system, 2, "15m"))
-
                 # Get stats for this system
                 system_stats = stats_data.get(system.id, {})
                 system_info = getattr(system, "info", {})
+
+                entities.append(BeszelAggregateDiskIOSensor(coordinator, system, "read"))
+                entities.append(BeszelAggregateDiskIOSensor(coordinator, system, "write"))
+                entities.append(BeszelDiskIOSensor(coordinator, system, "read"))
+                entities.append(BeszelDiskIOSensor(coordinator, system, "write"))
+                entities.append(BeszelLoadAverageSensor(coordinator, system, 0, "1m"))
+                entities.append(BeszelLoadAverageSensor(coordinator, system, 1, "5m"))
+                entities.append(BeszelLoadAverageSensor(coordinator, system, 2, "15m"))
+                for cpu_index, _ in enumerate(system_stats.get("cpus", []), start=1):
+                    entities.append(BeszelPerCPUSensor(coordinator, system, cpu_index))
 
                 if system_info.get("g") is not None:
                     entities.append(BeszelGPUSensor(coordinator, system))
@@ -71,6 +84,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
                         entities.append(BeszelEFSDiskSensor(coordinator, system, disk_name))
                         entities.append(BeszelDiskUsedSensor(coordinator, system, disk_name))
                         entities.append(BeszelDiskTotalSensor(coordinator, system, disk_name))
+                        entities.append(BeszelDiskIOSensor(coordinator, system, "read", disk_name))
+                        entities.append(BeszelDiskIOSensor(coordinator, system, "write", disk_name))
                         LOGGER.info(f"Created EFS sensors for {system.name} - {disk_name}")
 
                 # Create battery sensor if data is available
@@ -227,6 +242,47 @@ class BeszelGPUSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+
+class BeszelPerCPUSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, cpu_index):
+        super().__init__(coordinator, system)
+        self._cpu_index = cpu_index
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_cpu_{self._cpu_index}_v2"
+
+    @property
+    def name(self):
+        return f"{self.system.name} CPU {self._cpu_index}" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:memory"
+
+    @property
+    def native_value(self):
+        cpus = self.stats_data.get("cpus")
+        if not isinstance(cpus, list) or len(cpus) < self._cpu_index:
+            return None
+        return cpus[self._cpu_index - 1]
+
+    @property
+    def native_unit_of_measurement(self):
+        return PERCENTAGE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def suggested_display_precision(self):
+        return 0
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
 
 
 class BeszelRAMSensor(BeszelBaseSensor):
@@ -746,11 +802,7 @@ class BeszelDiskUsedSensor(BeszelBaseSensor):
         if not self.system:
             return None
         if self._disk_name:
-            label = (
-                f"NVMe{self._disk_name[4:]}"
-                if self._disk_name.lower().startswith("nvme")
-                else self._disk_name.upper()
-            )
+            label = _format_disk_label(self._disk_name)
             return f"{self.system.name} {label} Used"
         return f"{self.system.name} Disk Used"
 
@@ -879,6 +931,119 @@ class BeszelSwapUsedSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+
+class BeszelDiskIOSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, direction, disk_name=None):
+        super().__init__(coordinator, system)
+        self._direction = direction
+        self._disk_name = disk_name
+
+    @property
+    def unique_id(self):
+        if self._disk_name:
+            return f"beszel_{self._system_id}_{self._disk_name}_{self._direction}_v2"
+        return f"beszel_{self._system_id}_disk_{self._direction}_v2"
+
+    @property
+    def name(self):
+        if not self.system:
+            return None
+        action = "Read" if self._direction == "read" else "Write"
+        if self._disk_name:
+            return f"{self.system.name} {_format_disk_label(self._disk_name)} {action}"
+        return f"{self.system.name} Disk {action}"
+
+    @property
+    def icon(self):
+        if self._direction == "read":
+            return "mdi:database-arrow-down"
+        return "mdi:database-arrow-up"
+
+    @property
+    def native_value(self):
+        if self._disk_name:
+            disk_data = self.stats_data.get("efs", {}).get(self._disk_name, {})
+            if isinstance(disk_data, dict):
+                key = "r" if self._direction == "read" else "w"
+                return disk_data.get(key)
+            return None
+
+        disk_io = self.stats_data.get("dio")
+        if not isinstance(disk_io, list) or len(disk_io) < 2:
+            return None
+
+        value = disk_io[0] if self._direction == "read" else disk_io[1]
+        return value / 1_000_000 if value is not None else None
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfDataRate.MEGABYTES_PER_SECOND
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_RATE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def suggested_display_precision(self):
+        return 3
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
+
+
+class BeszelAggregateDiskIOSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, direction):
+        super().__init__(coordinator, system)
+        self._direction = direction
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_aggregate_{self._direction}s_v2"
+
+    @property
+    def name(self):
+        if not self.system:
+            return None
+        action = "Reads" if self._direction == "read" else "Writes"
+        return f"{self.system.name} {action}"
+
+    @property
+    def icon(self):
+        return "mdi:database-sync"
+
+    @property
+    def native_value(self):
+        disk_io = self.stats_data.get("dio")
+        if not isinstance(disk_io, list) or len(disk_io) < 2:
+            return None
+        value = disk_io[0] if self._direction == "read" else disk_io[1]
+        return value / 1_000_000 if value is not None else None
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfDataRate.MEGABYTES_PER_SECOND
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_RATE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def suggested_display_precision(self):
+        return 3
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
 
 
 class BeszelInterfaceCounterSensor(BeszelBaseSensor):
@@ -1032,11 +1197,7 @@ class BeszelEFSDiskSensor(BeszelBaseSensor):
     def name(self):
         if not self.system:
             return None
-        label = (
-            f"NVMe{self._disk_name[4:]}"
-            if self._disk_name.lower().startswith("nvme")
-            else self._disk_name.upper()
-        )
+        label = _format_disk_label(self._disk_name)
         return f"{self.system.name} {label}"
 
     @property
@@ -1178,11 +1339,7 @@ class BeszelDiskTotalSensor(BeszelBaseSensor):
         if not self.system:
             return None
         if self._disk_name:
-            label = (
-                f"NVMe{self._disk_name[4:]}"
-                if self._disk_name.lower().startswith("nvme")
-                else self._disk_name.upper()
-            )
+            label = _format_disk_label(self._disk_name)
             return f"{self.system.name} {label} Total"
         return f"{self.system.name} Disk Total"
 
