@@ -61,7 +61,7 @@ Or do it manually:
 - This is a fork, not the original upstream integration. Credit goes fully to @ronjar for creation and initial development.
 - All development after the original fork was done by GPT 5.4 Codex under close supervision and testing.
 
-## What It Does
+## Features
 
 The integration connects to your [Beszel Hub](https://www.beszel.dev/guide/what-is-beszel) install through its PocketBase-backed API and creates Home Assistant entities for your monitored systems running [Beszel Agent](https://www.beszel.dev/guide/agent-installation)
 
@@ -158,6 +158,13 @@ Aggregate disk I/O entities follow the system name, for example:
 - `test IO Writes`
 - `test IO`
 
+Per-interface network entities follow the interface name and direction, for example:
+
+- `test enp0s31f6 Bandwidth RX`
+- `test enp0s31f6 Bandwidth TX`
+- `test enp0s31f6 RX`
+- `test enp0s31f6 TX`
+
 Per-core CPU entities follow the CPU number, for example:
 
 - `test CPU 1`
@@ -174,13 +181,6 @@ Several sensor families also expose richer attributes on their main and related 
 - `Bandwidth`: aggregate RX/TX plus nested per-interface RX/TX/bandwidth values
 - `Temperature`: flat named temperature zone attributes like `acpitz_c` and `coretemp_core_0_c`
 - `S.M.A.R.T.`: device metadata plus flattened `smart_*` health and attribute values
-
-Per-interface network entities follow the interface name and direction, for example:
-
-- `test enp0s31f6 Bandwidth RX`
-- `test enp0s31f6 Bandwidth TX`
-- `test enp0s31f6 RX`
-- `test enp0s31f6 TX`
 
 ## Licensing
 
