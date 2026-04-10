@@ -18,7 +18,7 @@ from homeassistant.helpers.icon import icon_for_battery_level
 
 from .const import DOMAIN, LOGGER
 
-NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD = 4
+NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD = 3
 SMART_ATTRIBUTE_RENAMES = {
     "criticalwarning": "critical_warning",
     "availablespare": "available_spare",
@@ -65,6 +65,11 @@ def _normalize_smart_attribute_name(name: str) -> str:
     )
     normalized = re.sub(r"_+", "_", normalized).strip("_")
     return SMART_ATTRIBUTE_RENAMES.get(normalized, normalized)
+
+
+def _single_interface_enabled_default(stats_data: dict) -> bool:
+    interfaces = stats_data.get("ni", {})
+    return isinstance(interfaces, dict) and len(interfaces) == 1
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -1236,7 +1241,7 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
 
     @property
     def entity_registry_enabled_default(self) -> bool:
-        return False
+        return _single_interface_enabled_default(self.stats_data)
 
 
 class BeszelInterfaceBandwidthSensor(BeszelBaseSensor):
@@ -1288,7 +1293,7 @@ class BeszelInterfaceBandwidthSensor(BeszelBaseSensor):
 
     @property
     def entity_registry_enabled_default(self) -> bool:
-        return False
+        return _single_interface_enabled_default(self.stats_data)
 
 
 class BeszelUptimeSensor(BeszelBaseSensor):
