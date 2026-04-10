@@ -6,13 +6,13 @@ This project is a maintained fork of the original [`Ronjar/beszel-ha`](https://g
 
 However, I am totally open with merging this back into the original project if that turns out to be better long term.
 
-<table align="center">
+<table align="center" style="border-collapse: collapse;">
   <tr>
-    <td align="center">
+    <td align="center" style="border: none;">
       <img src="pictures/sensors.png" width="100%"><br>
       Sensors
     </td>
-    <td align="center">
+    <td align="center" style="border: none;">
       <img src="pictures/diagnostic.png" width="100%"><br>
       Diagnostics
     </td>
