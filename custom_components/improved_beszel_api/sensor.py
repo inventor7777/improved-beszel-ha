@@ -43,6 +43,7 @@ SMART_COUNT_SENSOR_ALIASES = {
     "offline_uncorrectable": ("offline_uncorrectable",),
     "load_cycle_count": ("load_cycle_count",),
     "start_stop_count": ("start_stop_count",),
+    "percentage_used": ("percentage_used",),
 }
 
 
@@ -903,6 +904,7 @@ class BeszelSmartCountSensor(BeszelSmartBaseSensor):
         "offline_uncorrectable": "Offline Uncorrectable",
         "load_cycle_count": "Load Cycle Count",
         "start_stop_count": "Start Stop Count",
+        "percentage_used": "Percentage Used",
     }
 
     def __init__(self, coordinator, system, device_data, metric_key):
@@ -936,6 +938,8 @@ class BeszelSmartCountSensor(BeszelSmartBaseSensor):
     def icon(self):
         if self._metric_key in {"load_cycle_count", "start_stop_count"}:
             return "mdi:harddisk-plus"
+        if self._metric_key == "percentage_used":
+            return "mdi:harddisk"
         return "mdi:harddisk-remove"
 
     @property
@@ -947,6 +951,12 @@ class BeszelSmartCountSensor(BeszelSmartBaseSensor):
                     return int(value)
                 except (TypeError, ValueError):
                     return value
+        return None
+
+    @property
+    def native_unit_of_measurement(self):
+        if self._metric_key == "percentage_used":
+            return PERCENTAGE
         return None
 
     @property
