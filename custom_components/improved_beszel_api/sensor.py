@@ -341,17 +341,17 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
         if isinstance(interfaces, dict) and interfaces:
             attributes["interfaces"] = {
                 name: {
-                    "bandwidth_rx_mb_s": round(values[0] / 1_000_000, 3)
-                    if len(values) > 0 and values[0] is not None
-                    else None,
-                    "bandwidth_tx_mb_s": round(values[1] / 1_000_000, 3)
+                    "bandwidth_rx_mb_s": round(values[1] / 1_000_000, 3)
                     if len(values) > 1 and values[1] is not None
                     else None,
-                    "rx_gib": round(values[2] / 1_000_000_000, 3)
-                    if len(values) > 2 and values[2] is not None
+                    "bandwidth_tx_mb_s": round(values[0] / 1_000_000, 3)
+                    if len(values) > 0 and values[0] is not None
                     else None,
-                    "tx_gib": round(values[3] / 1_000_000_000, 3)
+                    "rx_gib": round(values[3] / 1_000_000_000, 3)
                     if len(values) > 3 and values[3] is not None
+                    else None,
+                    "tx_gib": round(values[2] / 1_000_000_000, 3)
+                    if len(values) > 2 and values[2] is not None
                     else None,
                 }
                 for name, values in interfaces.items()
@@ -1610,7 +1610,7 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
         interface_data = self.stats_data.get("ni", {}).get(self._interface_name)
         if not interface_data or len(interface_data) < 4:
             return None
-        bytes_total = interface_data[2] if self._direction == "rx" else interface_data[3]
+        bytes_total = interface_data[3] if self._direction == "rx" else interface_data[2]
         return bytes_total / 1_000_000_000
 
     @property
@@ -1662,7 +1662,7 @@ class BeszelInterfaceBandwidthSensor(BeszelBaseSensor):
         interface_data = self.stats_data.get("ni", {}).get(self._interface_name)
         if not interface_data or len(interface_data) < 2:
             return None
-        rate = interface_data[0] if self._direction == "rx" else interface_data[1]
+        rate = interface_data[1] if self._direction == "rx" else interface_data[0]
         return rate / 1_000_000
 
     @property
