@@ -4,6 +4,7 @@ import httpx
 from pocketbase import PocketBase
 
 LOGGER = logging.getLogger(__name__)
+DEFAULT_BESZEL_RELEASES_URL = "https://github.com/henrygd/beszel/releases"
 
 
 class BeszelApiClient:
@@ -135,7 +136,7 @@ class BeszelUpdateApi:
             return {
                 "hub_version": hub_version,
                 "latest_version": latest_version,
-                "latest_release_url": latest_release_url,
+                "latest_release_url": latest_release_url or DEFAULT_BESZEL_RELEASES_URL,
                 "update_available": update_available,
                 "check_update": check_update,
             }
@@ -144,7 +145,7 @@ class BeszelUpdateApi:
             return {
                 "hub_version": None,
                 "latest_version": None,
-                "latest_release_url": None,
+                "latest_release_url": DEFAULT_BESZEL_RELEASES_URL,
                 "update_available": False,
                 "check_update": False,
             }
