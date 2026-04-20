@@ -85,7 +85,7 @@ async def async_setup_entry(hass, entry):
     coordinator_hub = None
     
     if update_check_enabled:
-        update_api = BeszelUpdateApi(url, verify_ssl=verify_ssl)
+        update_api = BeszelUpdateApi(client)
         async def async_update_hub():
             try:
                 return await hass.async_add_executor_job(update_api.get_update_info)
