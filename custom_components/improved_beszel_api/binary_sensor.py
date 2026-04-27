@@ -98,6 +98,11 @@ class BeszelBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
             "hw_version": info.get("k"),
         }
 
+    @property
+    def available(self) -> bool:
+        sys = self.system
+        return super().available and sys is not None and getattr(sys, "status", None) == "up"
+
 
 class BeszelStatusBinarySensor(BeszelBaseBinarySensor):
     @property
@@ -119,6 +124,10 @@ class BeszelStatusBinarySensor(BeszelBaseBinarySensor):
     @property
     def entity_category(self):
         return EntityCategory.DIAGNOSTIC
+
+    @property
+    def available(self) -> bool:
+        return super(BeszelBaseBinarySensor, self).available
 
 
 class BeszelSmartBinarySensor(BeszelBaseBinarySensor):

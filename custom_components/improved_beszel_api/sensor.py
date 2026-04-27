@@ -221,6 +221,11 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
         sys = self.system
         return getattr(sys, "info", {}) if sys else {}
 
+    @property
+    def available(self) -> bool:
+        sys = self.system
+        return super().available and sys is not None and getattr(sys, "status", None) == "up"
+
     def _cpu_family_attributes(self):
         attributes = {"cpu_percent": self.system_info.get("cpu")}
 
