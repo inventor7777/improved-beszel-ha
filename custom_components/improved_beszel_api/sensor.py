@@ -102,12 +102,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entities.append(BeszelNetworkSendSensor(coordinator, system))
                 entities.append(BeszelTemperatureSensor(coordinator, system))
                 entities.append(BeszelUptimeSensor(coordinator, system))
-                entities.append(BeszelMemoryUsedSensor(coordinator, system))
-                entities.append(BeszelMemoryCacheUsedSensor(coordinator, system))
-                entities.append(BeszelDiskUsedSensor(coordinator, system))
                 # Get stats for this system
                 system_stats = stats_data.get(system.id, {})
                 system_info = getattr(system, "info", {})
+                entities.append(BeszelMemoryUsedSensor(coordinator, system))
+                entities.append(BeszelMemoryCacheUsedSensor(coordinator, system))
+                if system_stats.get("mz") is not None:
+                    entities.append(BeszelMemoryZFSARCUsedSensor(coordinator, system))
+                entities.append(BeszelDiskUsedSensor(coordinator, system))
 
                 entities.append(BeszelAggregateDiskIOSensor(coordinator, system, "read"))
                 entities.append(BeszelAggregateDiskIOSensor(coordinator, system, "write"))
@@ -260,6 +262,7 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
             "total_gib": self.stats_data.get("m"),
             "used_gib": self.stats_data.get("mu"),
             "cache_gib": self.stats_data.get("mb"),
+            "zfs_arc_gib": self.stats_data.get("mz"),
         }
 
         swap_total = self.stats_data.get("s")
@@ -1133,6 +1136,40 @@ class BeszelMemoryCacheUsedSensor(BeszelBaseSensor):
     @property
     def entity_registry_enabled_default(self) -> bool:
         return False
+
+    @property
+    def extra_state_attributes(self):
+        return self._ram_family_attributes()
+
+
+class BeszelMemoryZFSARCUsedSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_memory_zfs_arc_used"
+
+    @property
+    def name(self):
+        return f"{self.system.name} RAM ZFS ARC Used" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:chip"
+
+    @property
+    def native_value(self):
+        return self.stats_data.get("mz")
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfInformation.GIBIBYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
 
     @property
     def extra_state_attributes(self):

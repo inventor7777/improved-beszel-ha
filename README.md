@@ -71,6 +71,7 @@ It currently exposes:
 - CPU usage
 - RAM usage percent
 - RAM cache usage (disabled by default)
+- RAM ZFS ARC usage when available
 - RAM total
 - RAM used
 - Disk usage percent
@@ -174,7 +175,7 @@ The main CPU sensor also includes CPU breakdown attributes such as `user_percent
 Several sensor families also expose richer attributes on their main and related sensors:
 
 - `CPU`: system CPU breakdown plus flat per-core values like `cpu_1_percent`
-- `RAM`: total, used, cache, and swap values
+- `RAM`: total, used, cache, ZFS ARC, and swap values
 - `Swap`: total, used, and percent values
 - `Disk`: totals plus read / write / combined I/O rates
 - `Bandwidth`: aggregate RX/TX plus nested per-interface RX/TX/bandwidth values
