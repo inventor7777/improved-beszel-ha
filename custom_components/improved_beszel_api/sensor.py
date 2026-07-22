@@ -128,8 +128,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     entities.append(BeszelGPUSensor(coordinator, system))
                     gpu_stats = system_stats.get("g", {})
                     primary_gpu = gpu_stats.get("i0") if isinstance(gpu_stats, dict) else None
+                    if not isinstance(primary_gpu, dict) and isinstance(gpu_stats, dict):
+                        primary_gpu = gpu_stats.get("0")
                     if isinstance(primary_gpu, dict):
-                        if primary_gpu.get("pp") is not None:
+                        if primary_gpu.get("pp") is not None or primary_gpu.get("p") is not None:
                             entities.append(BeszelGPUPowerSensor(coordinator, system))
                         engines = primary_gpu.get("e", {})
                         if isinstance(engines, dict):
@@ -389,6 +391,8 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
         if not isinstance(gpu_stats, dict):
             return {}
         primary_gpu = gpu_stats.get("i0")
+        if not isinstance(primary_gpu, dict):
+            primary_gpu = gpu_stats.get("0")
         return primary_gpu if isinstance(primary_gpu, dict) else {}
 
     def _gpu_family_attributes(self):
@@ -401,6 +405,8 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
         if usage is not None:
             attributes["gpu_percent"] = usage
         power = gpu_stats.get("pp")
+        if power is None:
+            power = gpu_stats.get("p")
         if power is not None:
             attributes["gpu_package_power_w"] = power
         engines = gpu_stats.get("e", {})
@@ -630,7 +636,11 @@ class BeszelGPUPowerSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
-        return self._gpu_stats().get("pp")
+        gpu_stats = self._gpu_stats()
+        power = gpu_stats.get("pp")
+        if power is None:
+            power = gpu_stats.get("p")
+        return power
 
     @property
     def native_unit_of_measurement(self):
