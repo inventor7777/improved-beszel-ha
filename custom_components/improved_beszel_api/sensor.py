@@ -9,6 +9,7 @@ from homeassistant.const import (
     PERCENTAGE,
     UnitOfDataRate,
     UnitOfInformation,
+    UnitOfPower,
     UnitOfTemperature,
     UnitOfTime,
 )
@@ -123,8 +124,20 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 for cpu_index, _ in enumerate(system_stats.get("cpus", []), start=1):
                     entities.append(BeszelPerCPUSensor(coordinator, system, cpu_index))
 
-                if system_info.get("g") is not None:
+                if system_info.get("g") is not None or system_stats.get("g") is not None:
                     entities.append(BeszelGPUSensor(coordinator, system))
+                    gpu_stats = system_stats.get("g", {})
+                    primary_gpu = gpu_stats.get("i0") if isinstance(gpu_stats, dict) else None
+                    if isinstance(primary_gpu, dict):
+                        if primary_gpu.get("pp") is not None:
+                            entities.append(BeszelGPUPowerSensor(coordinator, system))
+                        engines = primary_gpu.get("e", {})
+                        if isinstance(engines, dict):
+                            for engine_name in ("Render/3D", "Video", "VideoEnhance", "Blitter"):
+                                if engine_name in engines:
+                                    entities.append(
+                                        BeszelGPUEngineSensor(coordinator, system, engine_name)
+                                    )
 
                 if isinstance(system_info.get("sv"), list) and len(system_info["sv"]) >= 2:
                     entities.append(BeszelTotalServicesSensor(coordinator, system))
@@ -369,6 +382,38 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
 
         return attributes
 
+    def _gpu_stats(self):
+        gpu_stats = self.stats_data.get("g", {})
+        if not isinstance(gpu_stats, dict):
+            return {}
+        primary_gpu = gpu_stats.get("i0")
+        return primary_gpu if isinstance(primary_gpu, dict) else {}
+
+    def _gpu_family_attributes(self):
+        gpu_stats = self._gpu_stats()
+        attributes = {}
+        gpu_name = gpu_stats.get("n")
+        if gpu_name:
+            attributes["gpu_name"] = gpu_name
+        usage = gpu_stats.get("u")
+        if usage is not None:
+            attributes["gpu_percent"] = usage
+        power = gpu_stats.get("pp")
+        if power is not None:
+            attributes["gpu_package_power_w"] = power
+        engines = gpu_stats.get("e", {})
+        if isinstance(engines, dict):
+            engine_map = {
+                "Render/3D": "gpu_render_3d_percent",
+                "Video": "gpu_video_percent",
+                "VideoEnhance": "gpu_video_enhance_percent",
+                "Blitter": "gpu_blitter_percent",
+            }
+            for source_name, attr_name in engine_map.items():
+                if source_name in engines:
+                    attributes[attr_name] = engines.get(source_name)
+        return attributes
+
     @property
     def device_info(self):
         sys = self.system
@@ -509,6 +554,9 @@ class BeszelGPUSensor(BeszelBaseSensor):
 
     @property
     def native_value(self):
+        gpu_stats = self._gpu_stats()
+        if gpu_stats.get("u") is not None:
+            return gpu_stats.get("u")
         return self.system_info.get("g") if self.system else None
 
     @property
@@ -518,6 +566,14 @@ class BeszelGPUSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def suggested_display_precision(self):
+        return 2
+
+    @property
+    def extra_state_attributes(self):
+        return self._gpu_family_attributes()
 
 
 class BeszelPerCPUSensor(BeszelBaseSensor):
@@ -556,9 +612,90 @@ class BeszelPerCPUSensor(BeszelBaseSensor):
     def extra_state_attributes(self):
         return self._cpu_family_attributes()
 
+
+class BeszelGPUPowerSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_gpu_package_power"
+
+    @property
+    def name(self):
+        return f"{self.system.name} GPU Package Power" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:expansion-card"
+
+    @property
+    def native_value(self):
+        return self._gpu_stats().get("pp")
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfPower.WATT
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.POWER
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
     @property
     def suggested_display_precision(self):
-        return 0
+        return 2
+
+    @property
+    def extra_state_attributes(self):
+        return self._gpu_family_attributes()
+
+class BeszelGPUEngineSensor(BeszelBaseSensor):
+    ENGINE_LABELS = {
+        "Render/3D": "Render/3D",
+        "Video": "Video",
+        "VideoEnhance": "Video Enhance",
+        "Blitter": "Blitter",
+    }
+
+    def __init__(self, coordinator, system, engine_name):
+        super().__init__(coordinator, system)
+        self._engine_name = engine_name
+
+    @property
+    def unique_id(self):
+        normalized = (
+            self._engine_name.lower().replace("/", "_").replace(" ", "_")
+        )
+        return f"beszel_{self._system_id}_gpu_{normalized}"
+
+    @property
+    def name(self):
+        label = self.ENGINE_LABELS.get(self._engine_name, self._engine_name)
+        return f"{self.system.name} GPU {label}" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:expansion-card"
+
+    @property
+    def native_value(self):
+        engines = self._gpu_stats().get("e", {})
+        if not isinstance(engines, dict):
+            return None
+        return engines.get(self._engine_name)
+
+    @property
+    def native_unit_of_measurement(self):
+        return PERCENTAGE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        return self._gpu_family_attributes()
 
     @property
     def entity_registry_enabled_default(self) -> bool:
