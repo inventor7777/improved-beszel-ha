@@ -17,6 +17,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities([BeszelHubUpdate(hub_coordinator, entry.entry_id, entry.data.get("url"))])
 
 class BeszelHubUpdate(CoordinatorEntity, UpdateEntity):
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator, entry_id: str, base_url: str):
         super().__init__(coordinator)
         self._entry_id = entry_id
@@ -28,7 +30,7 @@ class BeszelHubUpdate(CoordinatorEntity, UpdateEntity):
 
     @property
     def name(self):
-        return "Beszel Hub Update"
+        return "Update"
 
     @property
     def installed_version(self):

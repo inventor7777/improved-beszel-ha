@@ -71,6 +71,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class BeszelBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator, system):
         super().__init__(coordinator)
         self._system_id = system.id
@@ -111,7 +113,7 @@ class BeszelStatusBinarySensor(BeszelBaseBinarySensor):
 
     @property
     def name(self):
-        return f"{self.system.name} Status" if self.system else None
+        return "Status" if self.system else None
 
     @property
     def is_on(self):
@@ -151,7 +153,7 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
     @property
     def name(self):
         label = _format_smart_device_label(self._disk_name)
-        return f"{self.system.name} {label} S.M.A.R.T." if self.system else None
+        return f"{label} S.M.A.R.T." if self.system else None
 
     @property
     def is_on(self):
