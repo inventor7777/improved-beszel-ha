@@ -95,11 +95,13 @@ It currently exposes:
 - Per-interface RX/TX byte counters
 - Per-core CPU usage
 - GPU usage when reported by Beszel
+- GPU package power when reported by Beszel
+- GPU engine usage sensors for Render/3D, Video, Video Enhance, and Blitter when reported by Beszel
 - Battery when reported by Beszel
 - Beszel Hub update status
 - S.M.A.R.T. disk health entities and attributes
 - S.M.A.R.T. temperature / power-on-hours sensors
-- S.M.A.R.T. count sensors for reallocated sectors, pending sectors, offline uncorrectable, load cycle count, and start/stop count
+- S.M.A.R.T. count sensors for reallocated sectors, pending sectors, offline uncorrectable, load cycle count, start/stop count, and percentage used
 - Number of systemd services failed/running
 
 Some noisier or less universally useful entities are disabled by default, such as:
