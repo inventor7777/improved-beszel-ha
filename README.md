@@ -28,6 +28,7 @@ In addition to the original sensors, it exposes:
 - Per-interface bandwidth RX / TX rate
 - Per-interface RX/TX byte counters
 - Per-core CPU usage sensors
+- GPU usage-by-type and package power
 - Swap info when the system reports swap
 - S.M.A.R.T. disk health entities and attributes
 - S.M.A.R.T. temperature / power-on-hours sensors
