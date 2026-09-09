@@ -7,6 +7,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, LOGGER
+from .smart import smart_device_key
 
 SMART_ATTRIBUTE_RENAMES = {
     "criticalwarning": "critical_warning",
@@ -137,7 +138,7 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
         super().__init__(coordinator, system)
         self._device_id = device_data.get("id", "")
         self._device_name = device_data.get("name", "")
-        self._disk_name = self._device_name.replace("/dev/", "")
+        self._disk_name = smart_device_key(self._device_name, self._device_id)
 
     @property
     def smart_device_data(self):
