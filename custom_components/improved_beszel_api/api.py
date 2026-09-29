@@ -90,6 +90,15 @@ class BeszelApiClient:
             LOGGER.warning("Failed to fetch network monitors: %s", e)
             return []
 
+    def get_zfs_pools(self):
+        """Get detailed storage pool records, including ZFS scrub status."""
+        try:
+            self._ensure_client()
+            return self._client.collection("zfs_pools").get_full_list()
+        except Exception as e:
+            LOGGER.warning("Failed to fetch storage pool details: %s", e)
+            return []
+
 
 class BeszelUpdateApi:
 

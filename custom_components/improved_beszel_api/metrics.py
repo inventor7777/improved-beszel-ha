@@ -29,6 +29,25 @@ def pool_io_mbps(stats, name, direction):
     return value / 1_000_000 if isinstance(value, (int, float)) else None
 
 
+def pool_attributes(data, system_id, name):
+    pool = (data.get("stats", {}).get(system_id, {}).get("z") or {}).get(name)
+    if not isinstance(pool, dict):
+        return {}
+    attributes = {
+        "health": pool.get("h"),
+        "total_gib": pool.get("d"),
+        "used_gib": pool.get("du"),
+        "raw_capacity": pool.get("raw"),
+    }
+    scrub = data.get("zfs_pools", {}).get((system_id, name))
+    if isinstance(scrub, dict):
+        attributes["scrub_state"] = scrub.get("state")
+        attributes["scrub_errors"] = scrub.get("errors", 0)
+        if scrub.get("progress"):
+            attributes["scrub_progress"] = scrub["progress"]
+    return attributes
+
+
 def container_updates_by_system(records):
     updates = {}
     for record in records:

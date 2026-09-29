@@ -8,6 +8,7 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, LOGGER
 from .smart import smart_device_key
+from .metrics import pool_attributes
 
 SMART_ATTRIBUTE_RENAMES = {
     "criticalwarning": "critical_warning",
@@ -161,6 +162,10 @@ class BeszelPoolHealthBinarySensor(BeszelBaseBinarySensor):
     @property
     def entity_category(self):
         return EntityCategory.DIAGNOSTIC
+
+    @property
+    def extra_state_attributes(self):
+        return pool_attributes(self.coordinator.data, self._system_id, self._pool_name)
 
 
 class BeszelSmartBinarySensor(BeszelBaseBinarySensor):

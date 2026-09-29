@@ -1,3 +1,5 @@
+from urllib.parse import urlsplit, urlunsplit
+
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant, callback
@@ -9,7 +11,16 @@ from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_VERIFY_S
 
 
 def _normalize_url(url: str) -> str:
-    return url.strip().rstrip("/").lower()
+    parts = urlsplit(url.strip())
+    userinfo, at, hostport = parts.netloc.rpartition("@")
+    if hostport.startswith("["):
+        host_end = hostport.find("]") + 1
+    else:
+        host_end = hostport.find(":")
+    if host_end <= 0:
+        host_end = len(hostport)
+    netloc = f"{userinfo}{at}{hostport[:host_end].lower()}{hostport[host_end:]}"
+    return urlunsplit((parts.scheme, netloc, parts.path.rstrip("/"), parts.query, parts.fragment))
 
 
 async def _validate_input(hass: HomeAssistant, data: dict) -> dict:

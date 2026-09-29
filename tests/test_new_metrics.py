@@ -25,6 +25,12 @@ class NewMetricsTest(unittest.TestCase):
         self.assertEqual(metrics.pool_io_mbps(stats, "tank", "write"), 0)
         self.assertIsNone(metrics.pool_io_mbps(stats, "missing", "read"))
         self.assertIsNone(metrics.pool_io_mbps({"z": {"tank": {"d": 200}}}, "tank", "read"))
+        data = {"stats": {"system": stats}, "zfs_pools": {("system", "tank"): {"state": "FINISHED", "errors": 0}}}
+        self.assertEqual(metrics.pool_attributes(data, "system", "tank")["scrub_state"], "FINISHED")
+        self.assertEqual(metrics.pool_attributes(data, "system", "tank")["scrub_errors"], 0)
+        self.assertNotIn("scrub_state", metrics.pool_attributes({"stats": {"system": stats}}, "system", "tank"))
+        data["zfs_pools"][("system", "tank")] = {"state": "SCANNING", "progress": "42%", "errors": 1}
+        self.assertEqual(metrics.pool_attributes(data, "system", "tank")["scrub_progress"], "42%")
 
     def test_container_update_counts_include_zero(self):
         records = [

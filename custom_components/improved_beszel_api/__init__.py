@@ -70,11 +70,16 @@ async def async_setup_entry(hass, entry):
 
             containers = await hass.async_add_executor_job(client.get_containers)
             monitors = await hass.async_add_executor_job(client.get_network_monitors)
+            pools = await hass.async_add_executor_job(client.get_zfs_pools)
             return {
                 "systems": systems,
                 "stats": stats_data,
                 "smart_devices": smart_devices,
                 "container_updates": container_updates_by_system(containers),
+                "zfs_pools": {
+                    (pool.system, pool.name): getattr(pool, "scrub", None)
+                    for pool in pools
+                },
                 "network_monitors": {
                     monitor.id: {
                         key: getattr(monitor, key, None)

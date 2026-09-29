@@ -19,7 +19,7 @@ from homeassistant.helpers.icon import icon_for_battery_level
 
 from .const import DOMAIN, LOGGER
 from .smart import smart_device_key
-from .metrics import disk_total_gib, pool_usage_percent, pool_io_mbps, monitor_response_ms, monitor_loss_percent
+from .metrics import disk_total_gib, pool_usage_percent, pool_io_mbps, pool_attributes, monitor_response_ms, monitor_loss_percent
 
 NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD = 3
 SMART_ATTRIBUTE_RENAMES = {
@@ -389,10 +389,10 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
                     "bandwidth_tx_mb_s": round(values[0] / 1_000_000, 3)
                     if len(values) > 0 and values[0] is not None
                     else None,
-                    "rx_gib": round(values[3] / 1_000_000_000, 3)
+                    "rx_gib": round(values[3] / (1024**3), 3)
                     if len(values) > 3 and values[3] is not None
                     else None,
-                    "tx_gib": round(values[2] / 1_000_000_000, 3)
+                    "tx_gib": round(values[2] / (1024**3), 3)
                     if len(values) > 2 and values[2] is not None
                     else None,
                 }
@@ -631,6 +631,10 @@ class BeszelPerCPUSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
 
     @property
     def extra_state_attributes(self):
@@ -1687,13 +1691,7 @@ class BeszelPoolUsageSensor(BeszelBaseSensor):
 
     @property
     def extra_state_attributes(self):
-        pool = (self.stats_data.get("z") or {}).get(self._pool_name, {})
-        return {
-            "health": pool.get("h"),
-            "total_gib": pool.get("d"),
-            "used_gib": pool.get("du"),
-            "raw_capacity": pool.get("raw"),
-        } if isinstance(pool, dict) else {}
+        return pool_attributes(self.coordinator.data, self._system_id, self._pool_name)
 
 
 class BeszelPoolUsedSensor(BeszelBaseSensor):
@@ -1729,6 +1727,10 @@ class BeszelPoolUsedSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        return pool_attributes(self.coordinator.data, self._system_id, self._pool_name)
 
 
 class BeszelPoolIOSensor(BeszelBaseSensor):
@@ -1772,6 +1774,10 @@ class BeszelPoolIOSensor(BeszelBaseSensor):
     @property
     def entity_registry_enabled_default(self) -> bool:
         return False
+
+    @property
+    def extra_state_attributes(self):
+        return pool_attributes(self.coordinator.data, self._system_id, self._pool_name)
 
 
 class BeszelContainerUpdatesSensor(BeszelBaseSensor):
@@ -1999,7 +2005,7 @@ class BeszelInterfaceCounterSensor(BeszelBaseSensor):
         if not interface_data or len(interface_data) < 4:
             return None
         bytes_total = interface_data[3] if self._direction == "rx" else interface_data[2]
-        return bytes_total / 1_000_000_000
+        return bytes_total / (1024**3)
 
     @property
     def native_unit_of_measurement(self):
