@@ -1667,7 +1667,7 @@ class BeszelPoolUsageSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        return f"{self._pool_name} Pool Usage" if self.system else None
+        return self._pool_name if self.system else None
 
     @property
     def icon(self):
@@ -1707,7 +1707,7 @@ class BeszelPoolUsedSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        return f"{self._pool_name} Pool Used" if self.system else None
+        return f"{self._pool_name} Used" if self.system else None
 
     @property
     def icon(self):
@@ -1743,7 +1743,7 @@ class BeszelPoolIOSensor(BeszelBaseSensor):
 
     @property
     def name(self):
-        return f"{self._pool_name} Pool IO {self._direction.title()}" if self.system else None
+        return f"{self._pool_name} IO {self._direction.title()}" if self.system else None
 
     @property
     def icon(self):

@@ -146,7 +146,7 @@ class BeszelPoolHealthBinarySensor(BeszelBaseBinarySensor):
 
     @property
     def name(self):
-        return f"{self._pool_name} Pool Health" if self.system else None
+        return f"{self._pool_name} Health" if self.system else None
 
     @property
     def is_on(self):
