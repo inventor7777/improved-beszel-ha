@@ -202,16 +202,6 @@ class BeszelSmartBinarySensor(BeszelBaseBinarySensor):
         return EntityCategory.DIAGNOSTIC
 
     @property
-    def icon(self):
-        device_data = self.smart_device_data
-        disk_type = (device_data.get("type") or "").lower()
-        if self.is_on:
-            return "mdi:harddisk-remove"
-        if "nvme" in self._disk_name.lower() or disk_type == "nvme":
-            return "mdi:expansion-card"
-        return "mdi:harddisk"
-
-    @property
     def extra_state_attributes(self):
         device_data = self.smart_device_data
         if not device_data:

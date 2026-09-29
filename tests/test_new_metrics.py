@@ -15,12 +15,16 @@ SPEC.loader.exec_module(metrics)
 
 class NewMetricsTest(unittest.TestCase):
     def test_disk_totals_and_pool_usage(self):
-        stats = {"diot": [1024**3, 2 * 1024**3], "z": {"tank": {"d": 200, "du": 50}}}
+        stats = {"diot": [1024**3, 2 * 1024**3], "z": {"tank": {"d": 200, "du": 50, "rb": 2500000, "wb": 0}}}
         self.assertEqual(metrics.disk_total_gib(stats, "read"), 1)
         self.assertEqual(metrics.disk_total_gib(stats, "write"), 2)
         self.assertEqual(metrics.pool_usage_percent(stats, "tank"), 25)
         self.assertIsNone(metrics.pool_usage_percent(stats, "missing"))
         self.assertIsNone(metrics.pool_usage_percent({"z": None}, "tank"))
+        self.assertEqual(metrics.pool_io_mbps(stats, "tank", "read"), 2.5)
+        self.assertEqual(metrics.pool_io_mbps(stats, "tank", "write"), 0)
+        self.assertIsNone(metrics.pool_io_mbps(stats, "missing", "read"))
+        self.assertIsNone(metrics.pool_io_mbps({"z": {"tank": {"d": 200}}}, "tank", "read"))
 
     def test_container_update_counts_include_zero(self):
         records = [

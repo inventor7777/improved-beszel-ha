@@ -105,7 +105,7 @@ It currently exposes:
 - S.M.A.R.T. temperature / power-on-hours sensors
 - S.M.A.R.T. count sensors for reallocated sectors, pending sectors, offline uncorrectable, load cycle count, start/stop count, and percentage used
 - Number of systemd services failed/running
-- Storage pool usage and health for ZFS and btrfs pools reported by Beszel
+- Storage pool usage percentage, used GiB, health, and read/write I/O for ZFS and btrfs pools reported by Beszel
 - Container image update count, with affected container names as an attribute
 - Network monitor response time and one-hour packet loss when Beszel 0.20+ monitors are configured
 
@@ -116,6 +116,7 @@ Some noisier or less universally useful entities are disabled by default, such a
 - Aggregate disk reads / writes
 - Aggregate disk I/O
 - Disk I/O sensors
+- Storage pool read/write I/O sensors
 - Named temperature sensors when a system reports more than 4 named temperature zones
 - Per-interface bandwidth and byte-counter sensors
 - S.M.A.R.T. diagnostic sensors when a system has more disks

@@ -21,6 +21,14 @@ def pool_usage_percent(stats, name):
     )
 
 
+def pool_io_mbps(stats, name, direction):
+    pool = (stats.get("z") or {}).get(name)
+    if not isinstance(pool, dict):
+        return None
+    value = pool.get("rb" if direction == "read" else "wb")
+    return value / 1_000_000 if isinstance(value, (int, float)) else None
+
+
 def container_updates_by_system(records):
     updates = {}
     for record in records:

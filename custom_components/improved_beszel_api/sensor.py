@@ -19,7 +19,7 @@ from homeassistant.helpers.icon import icon_for_battery_level
 
 from .const import DOMAIN, LOGGER
 from .smart import smart_device_key
-from .metrics import disk_total_gib, pool_usage_percent, monitor_response_ms, monitor_loss_percent
+from .metrics import disk_total_gib, pool_usage_percent, pool_io_mbps, monitor_response_ms, monitor_loss_percent
 
 NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD = 3
 SMART_ATTRIBUTE_RENAMES = {
@@ -129,6 +129,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     entities.append(BeszelDiskIOTotalSensor(coordinator, system, "write"))
                 for pool_name in system_stats.get("z", {}) or {}:
                     entities.append(BeszelPoolUsageSensor(coordinator, system, pool_name))
+                    entities.append(BeszelPoolUsedSensor(coordinator, system, pool_name))
+                    entities.append(BeszelPoolIOSensor(coordinator, system, pool_name, "read"))
+                    entities.append(BeszelPoolIOSensor(coordinator, system, pool_name, "write"))
                 if system.id in coordinator.data.get("container_updates", {}):
                     entities.append(BeszelContainerUpdatesSensor(coordinator, system))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 0, "1m"))
@@ -1667,6 +1670,10 @@ class BeszelPoolUsageSensor(BeszelBaseSensor):
         return f"{self._pool_name} Pool Usage" if self.system else None
 
     @property
+    def icon(self):
+        return "mdi:server"
+
+    @property
     def native_value(self):
         return pool_usage_percent(self.stats_data, self._pool_name)
 
@@ -1687,6 +1694,84 @@ class BeszelPoolUsageSensor(BeszelBaseSensor):
             "used_gib": pool.get("du"),
             "raw_capacity": pool.get("raw"),
         } if isinstance(pool, dict) else {}
+
+
+class BeszelPoolUsedSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, pool_name):
+        super().__init__(coordinator, system)
+        self._pool_name = pool_name
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_pool_{self._pool_name}_used"
+
+    @property
+    def name(self):
+        return f"{self._pool_name} Pool Used" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:server"
+
+    @property
+    def native_value(self):
+        pool = (self.stats_data.get("z") or {}).get(self._pool_name)
+        return pool.get("du") if isinstance(pool, dict) else None
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfInformation.GIBIBYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+
+class BeszelPoolIOSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, pool_name, direction):
+        super().__init__(coordinator, system)
+        self._pool_name = pool_name
+        self._direction = direction
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_pool_{self._pool_name}_io_{self._direction}"
+
+    @property
+    def name(self):
+        return f"{self._pool_name} Pool IO {self._direction.title()}" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:server"
+
+    @property
+    def native_value(self):
+        return pool_io_mbps(self.stats_data, self._pool_name, self._direction)
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfDataRate.MEGABYTES_PER_SECOND
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_RATE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def suggested_display_precision(self):
+        return 3
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
 
 
 class BeszelContainerUpdatesSensor(BeszelBaseSensor):
