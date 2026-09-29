@@ -62,6 +62,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
         for system in systems:
             entities.append(BeszelStatusBinarySensor(coordinator, system))
+            for pool_name in (coordinator.data.get("stats", {}).get(system.id, {}).get("z") or {}):
+                entities.append(BeszelPoolHealthBinarySensor(coordinator, system, pool_name))
             for device in smart_devices.get(system.id, []):
                 entities.append(BeszelSmartBinarySensor(coordinator, system, device))
 
@@ -131,6 +133,34 @@ class BeszelStatusBinarySensor(BeszelBaseBinarySensor):
     @property
     def available(self) -> bool:
         return super(BeszelBaseBinarySensor, self).available
+
+
+class BeszelPoolHealthBinarySensor(BeszelBaseBinarySensor):
+    def __init__(self, coordinator, system, pool_name):
+        super().__init__(coordinator, system)
+        self._pool_name = pool_name
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_pool_{self._pool_name}_health"
+
+    @property
+    def name(self):
+        return f"{self._pool_name} Pool Health" if self.system else None
+
+    @property
+    def is_on(self):
+        pool = (self.coordinator.data.get("stats", {}).get(self._system_id, {}).get("z") or {}).get(self._pool_name)
+        health = pool.get("h") if isinstance(pool, dict) else None
+        return health != "ONLINE" if health else None
+
+    @property
+    def device_class(self):
+        return BinarySensorDeviceClass.PROBLEM
+
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
 
 
 class BeszelSmartBinarySensor(BeszelBaseBinarySensor):

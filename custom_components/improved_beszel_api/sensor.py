@@ -19,6 +19,7 @@ from homeassistant.helpers.icon import icon_for_battery_level
 
 from .const import DOMAIN, LOGGER
 from .smart import smart_device_key
+from .metrics import disk_total_gib, pool_usage_percent, monitor_response_ms, monitor_loss_percent
 
 NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD = 3
 SMART_ATTRIBUTE_RENAMES = {
@@ -94,6 +95,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
         for system in systems:
             try:
+                for monitor_id, monitor in coordinator.data.get("network_monitors", {}).items():
+                    if monitor.get("system") == system.id:
+                        entities.append(BeszelNetworkMonitorSensor(coordinator, system, monitor_id, "response"))
+                        entities.append(BeszelNetworkMonitorSensor(coordinator, system, monitor_id, "loss"))
                 entities.append(BeszelCPUSensor(coordinator, system))
                 entities.append(BeszelRAMSensor(coordinator, system))
                 entities.append(BeszelRAMTotalSensor(coordinator, system))
@@ -119,6 +124,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entities.append(BeszelCombinedDiskIOSensor(coordinator, system))
                 entities.append(BeszelDiskIOSensor(coordinator, system, "read"))
                 entities.append(BeszelDiskIOSensor(coordinator, system, "write"))
+                if isinstance(system_stats.get("diot"), list):
+                    entities.append(BeszelDiskIOTotalSensor(coordinator, system, "read"))
+                    entities.append(BeszelDiskIOTotalSensor(coordinator, system, "write"))
+                for pool_name in system_stats.get("z", {}) or {}:
+                    entities.append(BeszelPoolUsageSensor(coordinator, system, pool_name))
+                if system.id in coordinator.data.get("container_updates", {}):
+                    entities.append(BeszelContainerUpdatesSensor(coordinator, system))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 0, "1m"))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 1, "5m"))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 2, "15m"))
@@ -1611,6 +1623,95 @@ class BeszelDiskIOSensor(BeszelBaseSensor):
         return self._disk_family_attributes(self._disk_name)
 
 
+class BeszelDiskIOTotalSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, direction):
+        super().__init__(coordinator, system)
+        self._direction = direction
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_disk_{self._direction}_total"
+
+    @property
+    def name(self):
+        return f"Disk {self._direction.title()} Total" if self.system else None
+
+    @property
+    def native_value(self):
+        return disk_total_gib(self.stats_data, self._direction)
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfInformation.GIBIBYTES
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DATA_SIZE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.TOTAL_INCREASING
+
+
+class BeszelPoolUsageSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, pool_name):
+        super().__init__(coordinator, system)
+        self._pool_name = pool_name
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_pool_{self._pool_name}_usage"
+
+    @property
+    def name(self):
+        return f"{self._pool_name} Pool Usage" if self.system else None
+
+    @property
+    def native_value(self):
+        return pool_usage_percent(self.stats_data, self._pool_name)
+
+    @property
+    def native_unit_of_measurement(self):
+        return PERCENTAGE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        pool = (self.stats_data.get("z") or {}).get(self._pool_name, {})
+        return {
+            "health": pool.get("h"),
+            "total_gib": pool.get("d"),
+            "used_gib": pool.get("du"),
+            "raw_capacity": pool.get("raw"),
+        } if isinstance(pool, dict) else {}
+
+
+class BeszelContainerUpdatesSensor(BeszelBaseSensor):
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_container_updates"
+
+    @property
+    def name(self):
+        return "Container Updates" if self.system else None
+
+    @property
+    def native_value(self):
+        updates = self.coordinator.data.get("container_updates", {})
+        return len(updates[self._system_id]) if self._system_id in updates else None
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        return {"containers": self.coordinator.data.get("container_updates", {}).get(self._system_id, [])}
+
+
 class BeszelAggregateDiskIOSensor(BeszelBaseSensor):
     def __init__(self, coordinator, system, direction):
         super().__init__(coordinator, system)
@@ -1890,6 +1991,67 @@ class BeszelInterfaceBandwidthSensor(BeszelBaseSensor):
     @property
     def extra_state_attributes(self):
         return self._bandwidth_family_attributes()
+
+
+class BeszelNetworkMonitorSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, monitor_id, metric):
+        super().__init__(coordinator, system)
+        self._monitor_id = monitor_id
+        self._metric = metric
+
+    @property
+    def monitor(self):
+        return self.coordinator.data.get("network_monitors", {}).get(self._monitor_id, {})
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_monitor_{self._monitor_id}_{self._metric}"
+
+    @property
+    def name(self):
+        if not self.system:
+            return None
+        label = f"{(self.monitor.get('protocol') or 'network').upper()} {self.monitor.get('target') or self._monitor_id}"
+        return f"{label} {'Response Time' if self._metric == 'response' else 'Packet Loss 1h'}"
+
+    @property
+    def available(self):
+        return super().available and bool(self.monitor.get("enabled"))
+
+    @property
+    def native_value(self):
+        if self._metric == "response":
+            return monitor_response_ms(self.monitor.get("res"))
+        return monitor_loss_percent(self.monitor)
+
+    @property
+    def native_unit_of_measurement(self):
+        return UnitOfTime.MILLISECONDS if self._metric == "response" else PERCENTAGE
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.DURATION if self._metric == "response" else None
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        monitor = self.monitor
+        attributes = {
+            "target": monitor.get("target"),
+            "protocol": monitor.get("protocol"),
+            "interval_seconds": monitor.get("interval"),
+            "last_updated": monitor.get("updated"),
+        }
+        if self._metric == "response":
+            attributes.update({
+                "avg_1h_ms": monitor_response_ms(monitor.get("resAvg1h")),
+                "min_1h_ms": monitor_response_ms(monitor.get("resMin1h")),
+                "max_1h_ms": monitor_response_ms(monitor.get("resMax1h")),
+            })
+        return attributes
 
 
 class BeszelUptimeSensor(BeszelBaseSensor):

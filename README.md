@@ -79,6 +79,7 @@ It currently exposes:
 - Disk total
 - Disk used
 - Aggregate disk reads / writes
+- Cumulative disk read / write totals
 - Aggregate disk I/O
 - Disk I/O read / write rate
 - Disk I/O total rate
@@ -104,6 +105,9 @@ It currently exposes:
 - S.M.A.R.T. temperature / power-on-hours sensors
 - S.M.A.R.T. count sensors for reallocated sectors, pending sectors, offline uncorrectable, load cycle count, start/stop count, and percentage used
 - Number of systemd services failed/running
+- Storage pool usage and health for ZFS and btrfs pools reported by Beszel
+- Container image update count, with affected container names as an attribute
+- Network monitor response time and one-hour packet loss when Beszel 0.20+ monitors are configured
 
 Some noisier or less universally useful entities are disabled by default, such as:
 
@@ -184,6 +188,8 @@ Several sensor families also expose richer attributes on their main and related 
 - `Bandwidth`: aggregate RX/TX plus nested per-interface RX/TX/bandwidth values
 - `Temperature`: flat named temperature zone attributes like `acpitz_c` and `coretemp_core_0_c`
 - `S.M.A.R.T.`: device metadata plus flattened `smart_*` health and attribute values
+
+Beszel 0.19+ provides storage pool data and cumulative disk I/O totals. Beszel 0.20+ also provides the container image update flag. These entities appear when the corresponding data exists for a system.
 
 ## Licensing
 

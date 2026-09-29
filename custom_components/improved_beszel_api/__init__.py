@@ -2,6 +2,7 @@ from datetime import timedelta
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_VERIFY_SSL, CONF_UPDATE_CHECK, CONF_SCAN_INTERVAL, UPDATE_INTERVAL, LOGGER
 from .api import BeszelApiClient, BeszelUpdateApi
+from .metrics import container_updates_by_system
 
 PLATFORMS = ["sensor", "binary_sensor", "update"]
 
@@ -67,7 +68,24 @@ async def async_setup_entry(hass, entry):
             except Exception as e:
                 LOGGER.warning(f"Failed to fetch S.M.A.R.T. devices: {e}")
 
-            return {"systems": systems, "stats": stats_data, "smart_devices": smart_devices}
+            containers = await hass.async_add_executor_job(client.get_containers)
+            monitors = await hass.async_add_executor_job(client.get_network_monitors)
+            return {
+                "systems": systems,
+                "stats": stats_data,
+                "smart_devices": smart_devices,
+                "container_updates": container_updates_by_system(containers),
+                "network_monitors": {
+                    monitor.id: {
+                        key: getattr(monitor, key, None)
+                        for key in (
+                            "system", "target", "protocol", "enabled", "interval",
+                            "res", "resAvg1h", "resMin1h", "resMax1h", "loss1h", "updated",
+                        )
+                    }
+                    for monitor in monitors
+                },
+            }
         except Exception as err:
             LOGGER.error(f"Error fetching systems: {err}")
             raise UpdateFailed(f"Error fetching systems: {err}")

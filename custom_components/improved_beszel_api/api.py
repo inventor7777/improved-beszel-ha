@@ -72,6 +72,24 @@ class BeszelApiClient:
             LOGGER.error(f"Failed to fetch S.M.A.R.T. devices: {e}")
             return []
 
+    def get_containers(self):
+        """Get current container records, including image update flags."""
+        try:
+            self._ensure_client()
+            return self._client.collection("containers").get_full_list()
+        except Exception as e:
+            LOGGER.warning("Failed to fetch containers: %s", e)
+            return []
+
+    def get_network_monitors(self):
+        """Get agent network monitors and their latest results."""
+        try:
+            self._ensure_client()
+            return self._client.collection("network_monitors").get_full_list()
+        except Exception as e:
+            LOGGER.warning("Failed to fetch network monitors: %s", e)
+            return []
+
 
 class BeszelUpdateApi:
 
