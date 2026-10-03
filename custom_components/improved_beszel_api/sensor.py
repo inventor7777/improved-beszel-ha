@@ -1837,6 +1837,10 @@ class BeszelPackageUpdatesSensor(BeszelBaseSensor):
     def state_class(self):
         return SensorStateClass.MEASUREMENT
 
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
+
 
 class BeszelAggregateDiskIOSensor(BeszelBaseSensor):
     def __init__(self, coordinator, system, direction):

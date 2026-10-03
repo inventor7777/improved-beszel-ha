@@ -194,7 +194,7 @@ Several sensor families also expose richer attributes on their main and related 
 
 Beszel 0.19+ provides storage pool data and cumulative disk I/O totals. Beszel 0.20+ also provides the container image update flag. These entities appear when the corresponding data exists for a system.
 
-Beszel 0.21+ adds Wi-Fi signal strength and pending package updates. Security update counts appear only when the agent's package manager reports them.
+Beszel 0.21+ adds `<interface> Wi-Fi Signal` sensors in dBm, with an `ssid` attribute when available. `Package Updates` counts pending updates; `Security Updates` counts security updates when the agent's package manager reports them. These sensors are created only when the corresponding data is available during integration setup.
 
 ## Licensing
 

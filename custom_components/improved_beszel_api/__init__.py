@@ -157,3 +157,18 @@ async def async_unload_entry(hass, entry):
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
+
+
+async def async_remove_config_entry_device(hass, entry, device_entry):
+    """Allow removing a device only after its system disappears from Beszel."""
+    runtime = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    identifiers = {value for domain, value in device_entry.identifiers if domain == DOMAIN}
+    if not runtime or not identifiers or entry.entry_id in identifiers:
+        return False
+
+    coordinator = runtime["coordinator"]
+    await coordinator.async_request_refresh()
+    if not coordinator.last_update_success:
+        return False
+    current_systems = {system.id for system in coordinator.data["systems"]}
+    return identifiers.isdisjoint(current_systems)
