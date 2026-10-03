@@ -19,7 +19,7 @@ from homeassistant.helpers.icon import icon_for_battery_level
 
 from .const import DOMAIN, LOGGER
 from .smart import smart_device_key
-from .metrics import disk_total_gib, pool_usage_percent, pool_io_mbps, pool_attributes, monitor_response_ms, monitor_loss_percent, wifi_interface, package_update_count
+from .metrics import disk_total_gib, pool_usage_percent, pool_io_mbps, pool_attributes, monitor_response_ms, monitor_loss_percent, wifi_interface, package_update_count, primary_gpu_stats
 
 NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD = 3
 SMART_ATTRIBUTE_RENAMES = {
@@ -148,13 +148,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 for cpu_index, _ in enumerate(system_stats.get("cpus", []), start=1):
                     entities.append(BeszelPerCPUSensor(coordinator, system, cpu_index))
 
-                if system_info.get("g") is not None or system_stats.get("g") is not None:
+                primary_gpu = primary_gpu_stats(system_stats)
+                gpu_usage = system_info.get("g")
+                if primary_gpu or (isinstance(gpu_usage, (int, float)) and not isinstance(gpu_usage, bool)):
                     entities.append(BeszelGPUSensor(coordinator, system))
-                    gpu_stats = system_stats.get("g", {})
-                    primary_gpu = gpu_stats.get("i0") if isinstance(gpu_stats, dict) else None
-                    if not isinstance(primary_gpu, dict) and isinstance(gpu_stats, dict):
-                        primary_gpu = gpu_stats.get("0")
-                    if isinstance(primary_gpu, dict):
+                    if primary_gpu:
                         if primary_gpu.get("pp") is not None or primary_gpu.get("p") is not None:
                             entities.append(BeszelGPUPowerSensor(coordinator, system))
                         engines = primary_gpu.get("e", {})
@@ -411,13 +409,7 @@ class BeszelBaseSensor(CoordinatorEntity, SensorEntity):
         return attributes
 
     def _gpu_stats(self):
-        gpu_stats = self.stats_data.get("g", {})
-        if not isinstance(gpu_stats, dict):
-            return {}
-        primary_gpu = gpu_stats.get("i0")
-        if not isinstance(primary_gpu, dict):
-            primary_gpu = gpu_stats.get("0")
-        return primary_gpu if isinstance(primary_gpu, dict) else {}
+        return primary_gpu_stats(self.stats_data)
 
     def _gpu_family_attributes(self):
         gpu_stats = self._gpu_stats()

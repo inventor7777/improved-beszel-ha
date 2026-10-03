@@ -79,3 +79,13 @@ def package_update_count(info, index):
         return None
     value = counts[index]
     return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+
+
+def primary_gpu_stats(stats):
+    gpus = stats.get("g")
+    if not isinstance(gpus, dict):
+        return {}
+    primary = gpus.get("i0")
+    if not isinstance(primary, dict):
+        primary = gpus.get("0")
+    return primary if isinstance(primary, dict) else {}

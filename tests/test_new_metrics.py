@@ -56,3 +56,9 @@ class NewMetricsTest(unittest.TestCase):
         self.assertEqual(metrics.package_update_count(info, 1), 3)
         self.assertIsNone(metrics.package_update_count({"pu": [12]}, 1))
         self.assertIsNone(metrics.package_update_count({"pu": [True]}, 0))
+
+    def test_primary_gpu_requires_a_reported_device(self):
+        self.assertEqual(metrics.primary_gpu_stats({"g": {}}), {})
+        self.assertEqual(metrics.primary_gpu_stats({"g": {"i0": {}}}), {})
+        self.assertEqual(metrics.primary_gpu_stats({"g": {"i0": {"u": 0}}}), {"u": 0})
+        self.assertEqual(metrics.primary_gpu_stats({"g": {"0": {"u": 3}}}), {"u": 3})
