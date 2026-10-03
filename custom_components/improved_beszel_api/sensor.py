@@ -1284,7 +1284,7 @@ class BeszelMemoryCacheUsedSensor(BeszelBaseSensor):
 
     @property
     def icon(self):
-        return "mdi:memory"
+        return "mdi:chip"
 
     @property
     def native_value(self):
