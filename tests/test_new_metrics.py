@@ -47,3 +47,12 @@ class NewMetricsTest(unittest.TestCase):
         self.assertEqual(metrics.monitor_loss_percent({"res": 28718, "loss1h": 0}), 0)
         self.assertEqual(metrics.monitor_loss_percent({"res": 0, "loss1h": 100}), 100)
         self.assertIsNone(metrics.monitor_loss_percent({"res": 0, "loss1h": 0}))
+
+    def test_wifi_and_package_updates(self):
+        info = {"wf": {"wlan0": {"s": "Test", "r": -66}}, "pu": [12, 3]}
+        self.assertEqual(metrics.wifi_interface(info, "wlan0"), {"s": "Test", "r": -66})
+        self.assertEqual(metrics.wifi_interface(info, "missing"), {})
+        self.assertEqual(metrics.package_update_count(info, 0), 12)
+        self.assertEqual(metrics.package_update_count(info, 1), 3)
+        self.assertIsNone(metrics.package_update_count({"pu": [12]}, 1))
+        self.assertIsNone(metrics.package_update_count({"pu": [True]}, 0))

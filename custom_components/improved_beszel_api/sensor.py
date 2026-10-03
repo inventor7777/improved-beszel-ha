@@ -19,7 +19,7 @@ from homeassistant.helpers.icon import icon_for_battery_level
 
 from .const import DOMAIN, LOGGER
 from .smart import smart_device_key
-from .metrics import disk_total_gib, pool_usage_percent, pool_io_mbps, pool_attributes, monitor_response_ms, monitor_loss_percent
+from .metrics import disk_total_gib, pool_usage_percent, pool_io_mbps, pool_attributes, monitor_response_ms, monitor_loss_percent, wifi_interface, package_update_count
 
 NAMED_TEMPERATURE_SENSOR_ENABLE_THRESHOLD = 3
 SMART_ATTRIBUTE_RENAMES = {
@@ -134,6 +134,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     entities.append(BeszelPoolIOSensor(coordinator, system, pool_name, "write"))
                 if system.id in coordinator.data.get("container_updates", {}):
                     entities.append(BeszelContainerUpdatesSensor(coordinator, system))
+                if isinstance(system_info.get("pu"), list):
+                    entities.append(BeszelPackageUpdatesSensor(coordinator, system, 0))
+                    if len(system_info["pu"]) > 1:
+                        entities.append(BeszelPackageUpdatesSensor(coordinator, system, 1))
+                wifi = system_info.get("wf")
+                if isinstance(wifi, dict):
+                    for interface_name in wifi:
+                        entities.append(BeszelWifiSignalSensor(coordinator, system, interface_name))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 0, "1m"))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 1, "5m"))
                 entities.append(BeszelLoadAverageSensor(coordinator, system, 2, "15m"))
@@ -1803,6 +1811,33 @@ class BeszelContainerUpdatesSensor(BeszelBaseSensor):
         return {"containers": self.coordinator.data.get("container_updates", {}).get(self._system_id, [])}
 
 
+class BeszelPackageUpdatesSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, index):
+        super().__init__(coordinator, system)
+        self._index = index
+
+    @property
+    def unique_id(self):
+        kind = "security" if self._index else "package"
+        return f"beszel_{self._system_id}_{kind}_updates"
+
+    @property
+    def name(self):
+        return ("Security Updates" if self._index else "Package Updates") if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:update"
+
+    @property
+    def native_value(self):
+        return package_update_count(self.system_info, self._index)
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+
 class BeszelAggregateDiskIOSensor(BeszelBaseSensor):
     def __init__(self, coordinator, system, direction):
         super().__init__(coordinator, system)
@@ -2082,6 +2117,46 @@ class BeszelInterfaceBandwidthSensor(BeszelBaseSensor):
     @property
     def extra_state_attributes(self):
         return self._bandwidth_family_attributes()
+
+
+class BeszelWifiSignalSensor(BeszelBaseSensor):
+    def __init__(self, coordinator, system, interface_name):
+        super().__init__(coordinator, system)
+        self._interface_name = interface_name
+
+    @property
+    def unique_id(self):
+        return f"beszel_{self._system_id}_{self._interface_name}_wifi_signal"
+
+    @property
+    def name(self):
+        return f"{self._interface_name.lower()} Wi-Fi Signal" if self.system else None
+
+    @property
+    def icon(self):
+        return "mdi:wifi"
+
+    @property
+    def native_value(self):
+        value = wifi_interface(self.system_info, self._interface_name).get("r")
+        return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+
+    @property
+    def native_unit_of_measurement(self):
+        return "dBm"
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.SIGNAL_STRENGTH
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self):
+        ssid = wifi_interface(self.system_info, self._interface_name).get("s")
+        return {"ssid": ssid} if ssid else {}
 
 
 class BeszelNetworkMonitorSensor(BeszelBaseSensor):

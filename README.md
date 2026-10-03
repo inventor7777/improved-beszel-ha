@@ -108,6 +108,8 @@ It currently exposes:
 - Storage pool usage percentage, used GiB, health, and read/write I/O for ZFS and btrfs pools reported by Beszel, with ZFS scrub status as pool attributes when available
 - Container image update count, with affected container names as an attribute
 - Network monitor response time and one-hour packet loss when Beszel 0.20+ monitors are configured
+- Per-interface Wi-Fi signal strength in dBm, with SSID when Beszel 0.21+ reports it
+- Pending package update and security update counts when Beszel 0.21+ reports them
 
 Some noisier or less universally useful entities are disabled by default, such as:
 
@@ -191,6 +193,8 @@ Several sensor families also expose richer attributes on their main and related 
 - `S.M.A.R.T.`: device metadata plus flattened `smart_*` health and attribute values
 
 Beszel 0.19+ provides storage pool data and cumulative disk I/O totals. Beszel 0.20+ also provides the container image update flag. These entities appear when the corresponding data exists for a system.
+
+Beszel 0.21+ adds Wi-Fi signal strength and pending package updates. Security update counts appear only when the agent's package manager reports them.
 
 ## Licensing
 

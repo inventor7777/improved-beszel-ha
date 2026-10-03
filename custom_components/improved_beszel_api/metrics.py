@@ -65,3 +65,17 @@ def monitor_response_ms(value):
 def monitor_loss_percent(monitor):
     loss = monitor.get("loss1h")
     return loss if (monitor.get("res") or loss) and isinstance(loss, (int, float)) else None
+
+
+def wifi_interface(info, name):
+    interfaces = info.get("wf")
+    value = interfaces.get(name) if isinstance(interfaces, dict) else None
+    return value if isinstance(value, dict) else {}
+
+
+def package_update_count(info, index):
+    counts = info.get("pu")
+    if not isinstance(counts, list) or len(counts) <= index:
+        return None
+    value = counts[index]
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
