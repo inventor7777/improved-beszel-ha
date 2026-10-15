@@ -1,4 +1,5 @@
 import logging
+from types import SimpleNamespace
 
 from pocketbase import PocketBase
 
@@ -76,7 +77,17 @@ class BeszelApiClient:
         """Get current container records, including image update flags."""
         try:
             self._ensure_client()
-            return self._client.collection("containers").get_full_list()
+            records = []
+            page = 1
+            while True:
+                result = self._client.send(
+                    f"/api/collections/containers/records?page={page}&perPage=500",
+                    {"method": "GET"},
+                )
+                records.extend(SimpleNamespace(**item) for item in result["items"])
+                if page >= result["totalPages"]:
+                    return records
+                page += 1
         except Exception as e:
             LOGGER.warning("Failed to fetch containers: %s", e)
             return []
