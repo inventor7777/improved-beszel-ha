@@ -1790,6 +1790,10 @@ class BeszelContainerUpdatesSensor(BeszelBaseSensor):
         return "Container Updates" if self.system else None
 
     @property
+    def icon(self):
+        return "mdi:update"
+
+    @property
     def native_value(self):
         updates = self.coordinator.data.get("container_updates", {})
         return len(updates[self._system_id]) if self._system_id in updates else None
@@ -1797,6 +1801,10 @@ class BeszelContainerUpdatesSensor(BeszelBaseSensor):
     @property
     def state_class(self):
         return SensorStateClass.MEASUREMENT
+
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
 
     @property
     def extra_state_attributes(self):
